@@ -1,0 +1,123 @@
+.checkout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  z-index: 200;
+  animation: fadeIn 200ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.checkout-modal {
+  width: min(480px, 100%);
+  background: linear-gradient(180deg, #1E293B, #0F172A);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.5);
+  animation: slideUp 300ms ease;
+}
+
+.checkout-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.checkout-modal__title {
+  margin: 0;
+  font-size: 22px;
+  color: #F1F5F9;
+  font-weight: 700;
+}
+
+.checkout-modal__subtitle {
+  margin: 4px 0 0;
+  color: #64748B;
+  font-size: 14px;
+}
+
+.checkout-modal__close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94A3B8;
+  cursor: pointer;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+  transition: all 200ms ease;
+}
+
+.checkout-modal__close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #F87171;
+}
+
+.checkout-modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.checkout-modal__body label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94A3B8;
+}
+
+.checkout-modal__body input,
+.checkout-modal__body select,
+.checkout-modal__body textarea {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  color: #E2E8F0;
+  font-size: 15px;
+  font-family: inherit;
+  transition: border-color 200ms ease;
+}
+
+.checkout-modal__body input:focus,
+.checkout-modal__body select:focus,
+.checkout-modal__body textarea:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.checkout-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}

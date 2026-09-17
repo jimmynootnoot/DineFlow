@@ -1,0 +1,212 @@
+/* ═══════════════════════════════════════════════════════════════
+   DineFlow — Token Layer
+   The single source of truth for colour, type, space, elevation
+   and motion. Components consume these variables only; no raw
+   hex values, no arbitrary px, anywhere below this file.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ── SURFACES ────────────────────────────────────────────────
+     Warm neutrals. Never pure white. */
+  --surface-base:      #FDFAF3;   /* page background, customer-facing */
+  --surface-raised:    #FFFEFA;   /* cards, panels */
+  --surface-sunken:    #F5EFE4;   /* input fields, inset areas */
+  --surface-inverse:   #1F2A26;   /* dark sections */
+  --surface-inverse-2: #2E3A35;   /* raised cards on dark */
+
+  /* ── INK ─────────────────────────────────────────────────────
+     Never pure black. */
+  --ink-primary:       #1C2321;   /* headings, primary text */
+  --ink-secondary:     #5A5449;   /* body text, descriptions */
+  --ink-tertiary:      #8C8478;   /* metadata, timestamps, captions */
+  --ink-inverse:       #F5EFE4;   /* text on dark surfaces */
+
+  /* ── ACCENT ──────────────────────────────────────────────────
+     ONE accent. At most two appearances per screen. */
+  --accent:            #2F5D50;   /* primary actions, price emphasis */
+  --accent-hover:      #24483E;
+  --accent-subtle:     #EAF1EE;   /* accent-tinted backgrounds */
+  --accent-40:         rgba(47, 93, 80, 0.40);   /* focus border */
+  --accent-ring:       rgba(47, 93, 80, 0.14);   /* focus ring */
+  --accent-25:         rgba(47, 93, 80, 0.25);   /* AI surface border */
+
+  /* ── SUPPORT ─────────────────────────────────────────────────
+     Semantic only. Never decorative. */
+  --success:           #2A7449;   /* available, ready, confirmed */
+  --success-subtle:    #E6F5EA;
+  --warning:           #96650C;   /* approaching time limits */
+  --warning-subtle:    #FDF3DC;
+  --danger:            #B32D1E;   /* delayed, sold out, destructive */
+  --danger-subtle:     #FDE8E4;
+
+  /* Timing colours for the DARK kitchen display only. The support
+     colours above are tuned to stay legible as text on light tints,
+     which makes them far too dark to read as a border on near-black.
+     Same three meanings, re-cut for the inverse ground. */
+  --timing-ok:         #4FB878;   /* on schedule */
+  --timing-warn:       #E0A93C;   /* approaching time limit */
+  --timing-late:       #E4614A;   /* delayed */
+
+  /* ── LINES ───────────────────────────────────────────────────*/
+  --line-subtle:       rgba(28, 35, 33, 0.08);
+  --line-default:      rgba(28, 35, 33, 0.14);
+  --line-strong:       rgba(28, 35, 33, 0.24);
+  /* On inverse surfaces the same lines read from the light side. */
+  --line-inverse:      rgba(245, 239, 228, 0.14);
+  /* Washes on the inverse surfaces — hover, selected, inset. */
+  --tint-inverse-1:    rgba(245, 239, 228, 0.06);
+  --tint-inverse-2:    rgba(245, 239, 228, 0.10);
+  --tint-inverse-3:    rgba(245, 239, 228, 0.14);
+
+  /* ── KITCHEN DISPLAY ─────────────────────────────────────────
+     Arm's-length reading under bright light. The one place that
+     leaves the warm palette: near-black ground, near-white ink. */
+  --kitchen-base:      #0E1110;
+  --kitchen-raised:    #191F1D;
+  --kitchen-ink:       #F7F4ED;
+  --kitchen-ink-dim:   #A8B0AC;
+  --kitchen-line:      rgba(247, 244, 237, 0.14);
+  --tint-kitchen-1:    rgba(247, 244, 237, 0.06);
+  --tint-kitchen-2:    rgba(247, 244, 237, 0.10);
+  --tint-late:         rgba(228, 97, 74, 0.12);
+  --tint-shimmer:      rgba(255, 254, 250, 0.55);
+
+
+  /* ═══ TYPOGRAPHY ═════════════════════════════════════════════
+     Two families for reading, one for figures. Three weights.
+     Six sizes. That is the whole system. */
+
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-ui:      'Karla', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono:    'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+
+  /* Size / line-height pairs. Never set one without the other. */
+  --text-xs:      11px;  --leading-xs:   1.4;   /* metadata, captions */
+  --text-sm:      13px;  --leading-sm:   1.5;   /* secondary text, labels */
+  --text-base:    15px;  --leading-base: 1.6;   /* body */
+  --text-lg:      18px;  --leading-lg:   1.4;   /* card titles, dish names */
+  --text-xl:      24px;  --leading-xl:   1.25;  /* section headings */
+  --text-2xl:     34px;  --leading-2xl:  1.15;  /* page titles, hero figures */
+
+  /* Large type looks loose at default tracking. */
+  --tracking-tight: -0.02em;  /* --text-xl and --text-2xl only */
+  --tracking-label:  0.08em;  /* uppercase eyebrows */
+  --tracking-badge:  0.06em;  /* uppercase pills */
+
+
+  /* ═══ SPACE ══════════════════════════════════════════════════
+     4px base. No values outside this scale. */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;   /* card padding floor; on the 4px base, added to
+                         the listed set so it need not be inlined */
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Rhythm — the ratio between these is what makes structure
+     readable without drawing boxes. */
+  --gap-within-group:   var(--space-3);   /* 12px */
+  --gap-within-group-lg:var(--space-4);   /* 16px */
+  --gap-between-groups: var(--space-12);  /* 48px */
+  --gap-between-groups-lg: var(--space-16); /* 64px */
+
+  --pad-card:         var(--space-5);        /* 20px, mobile floor */
+  --pad-card-desktop: var(--space-6);        /* 24px */
+
+  /* Measure */
+  --width-dashboard: 1240px;
+  --width-prose:      640px;
+
+
+  /* ═══ ELEVATION & SHAPE ══════════════════════════════════════
+     Three levels, no more. Prefer a 1px line over a shadow for
+     anything static — shadows imply interactivity or layering. */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(28, 35, 33, 0.04),
+            0 2px 8px rgba(28, 35, 33, 0.04);
+  --elev-2: 0 4px 12px rgba(28, 35, 33, 0.06),
+            0 12px 32px rgba(28, 35, 33, 0.08);
+
+  --radius-card:   10px;  /* cards, inputs */
+  --radius-button:  8px;  /* buttons, chips */
+  --radius-pill:  999px;  /* pills, avatars */
+
+  --focus-ring: 0 0 0 3px var(--accent-ring);
+
+
+  /* ═══ MOTION ═════════════════════════════════════════════════
+     Restrained and fast. Nothing decorative. */
+  --ease:            cubic-bezier(0.2, 0, 0.2, 1);
+  /* Strong ease-out for anything entering or exiting. The built-in
+     curves are too weak to read as intentional, and ease-in is never
+     correct for UI — it delays the first frame, exactly where the
+     user is looking. */
+  --ease-out:        cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-press:       120ms;  /* button press feedback */
+  --dur-color:       150ms;  /* colour and opacity */
+  --dur-transform:   200ms;  /* transform */
+  --dur-enter:       250ms;  /* the one entrance animation */
+
+  --transition-color:     color var(--dur-color) var(--ease),
+                          background-color var(--dur-color) var(--ease),
+                          border-color var(--dur-color) var(--ease),
+                          opacity var(--dur-color) var(--ease);
+  --transition-transform: transform var(--dur-transform) var(--ease),
+                          box-shadow var(--dur-transform) var(--ease);
+
+
+  /* ═══ AI SURFACES ════════════════════════════════════════════
+     The only distinguishing treatment in the app: a barely-there
+     warm gradient and a hairline accent border. No purple, no
+     sparkle. Currently unused — no AI surface exists yet. */
+  --ai-gradient: linear-gradient(135deg,
+                   var(--surface-raised) 0%,
+                   var(--accent-subtle) 100%);
+  /* Login-scene washes: warm neutral + a whisper of accent. Decorative
+     only, and kept below the threshold where they read as colour. */
+  --wash-accent:  rgba(47, 93, 80, 0.10);
+  --wash-neutral: rgba(140, 132, 120, 0.10);
+  --ai-border:   var(--accent-25);
+}
+
+
+/* ── Base type behaviour ──────────────────────────────────────
+   Figures that get scanned or compared must line up. */
+.tnum,
+[class*="--mono"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+
+/* ── Reduced motion ───────────────────────────────────────────
+   Drop every transform. Keep opacity fades — they carry state
+   without moving anything. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-transform: 0ms;
+    --dur-enter:     0ms;
+    --transition-transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: var(--dur-color) !important;
+    scroll-behavior: auto !important;
+  }
+  *:not(.keep-transform) {
+    transform: none !important;
+  }
+}

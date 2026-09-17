@@ -1,0 +1,101 @@
+================================================================================
+                    RESTAURANT ORDERING SYSTEM
+                    SYSTEM DATA LOGIC SUMMARY
+================================================================================
+
+1. User & Role Management
+--------------------------------------------------------------------------------
+The system centers on Users who can act in different roles: Administrators 
+(managing the system and menu), Kitchen Staff (preparing orders), Cashiers 
+(process payments), or Customers (placing orders). Each User is identified by 
+their unique username and email, with role-based access control determining 
+their permissions within the system. Users can create accounts, log in, and 
+perform actions based on their assigned role (Admin, Kitchen, Cashier, 
+Customer).
+
+2. Menu & Order Item Hierarchy
+--------------------------------------------------------------------------------
+The ERD enforces a structured hierarchy for the ordering system: A Menu 
+contains multiple Menu Items, each with their own pricing and availability 
+status. When a Customer places an Order, the system creates a container that 
+holds the Order Type (DINE_IN or PICKUP), Order Status (NEW, IN_PROGRESS, 
+READY, COMPLETED, CANCELLED), and an array of Order Items. Each Order Item 
+references specific Menu Items from the menu collection, including their name 
+and price. This granular structure allows for precise tracking of what items 
+were ordered and their quantities.
+
+3. The Order Process
+--------------------------------------------------------------------------------
+The Order entity is the central bridge of the system's business logic. It 
+connects a Customer (identified by customerName) to specific Menu Items 
+while tracking the complete order lifecycle. The Order contains:
+- Order Details: type (DINE_IN/PICKUP), status, note
+- Items Array: embedded list of {id, itemName, price} for each ordered item
+- Financial Summary: total amount calculated from all items
+- Timestamps: createdAt for tracking when order was placed
+
+The Order Status flows through: NEW → IN_PROGRESS → READY → COMPLETED, 
+or can be CANCELLED at any point. Payment processing is handled through 
+the system with the total amount recorded at order creation.
+
+================================================================================
+                              COLLECTIONS
+================================================================================
+
+1. USER (users collection)
+- user_id     : String (Auto-generated Document ID)
+- name        : String - Full name
+- username    : String - Unique login identifier
+- email       : String - Unique email address
+- password    : String - User password
+- role        : String - Admin|Kitchen|Cashier|Customer
+- createdAt   : Timestamp - Registration date
+
+2. MENU_ITEM (menu collection)
+- menu_id    : String (Auto-generated Document ID)
+- itemName   : String - Name of the dish/beverage
+- description: String - Brief description of item
+- price      : Number - Price in dollars
+- available  : Boolean - Whether item can be ordered
+- createdAt  : Timestamp - Date item was added
+
+3. ORDER (orders collection)
+- order_id     : String (Auto-generated Document ID)
+- customerName : String - Name of customer who placed order
+- type         : String - DINE_IN or PICKUP
+- status       : String - NEW|IN_PROGRESS|READY|COMPLETED|CANCELLED
+- note         : String - Special instructions from customer
+- items        : Array - [{id, itemName, price}, ...]
+- total        : Number - Total order amount
+- createdAt    : Timestamp - When order was created
+
+
+================================================================================
+                          RELATIONSHIPS DIAGRAM
+================================================================================
+
+    USERS (1) ──────< ORDERS (N)
+         │
+         │ places
+         │
+         ▼
+    ORDERS ──────< items (Array) ──────< MENU_ITEMS
+         │
+         │ contains
+         │
+         ▼
+    Embedded: {id, itemName, price}
+
+
+================================================================================
+                          ORDER STATUS FLOW
+================================================================================
+
+    NEW ──→ IN_PROGRESS ──→ READY ──→ COMPLETED
+                         │             │
+                         │             └─→ (pickup)
+                         │
+                         └─→ CANCELLED
+
+
+================================================================================

@@ -1,0 +1,43 @@
+.sales-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.sales-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  transition: all 200ms ease;
+}
+
+.sales-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 175, 55, 0.15);
+  transform: translateY(-2px);
+}
+
+.sales-card__icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.sales-card__label {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748B;
+  font-weight: 600;
+}
+
+.sales-card__value {
+  margin: 6px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: #F1F5F9;
+  letter-spacing: -0.02em;
+}

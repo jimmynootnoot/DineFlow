@@ -1,0 +1,290 @@
+================================================================================
+                    RESTAURANT ORDERING SYSTEM
+                    SYSTEM DATA LOGIC SUMMARY
+                    (Based on Firebase Firestore)
+================================================================================
+
+================================================================================
+                            SYSTEM OVERVIEW
+================================================================================
+
+This is a Restaurant Ordering System with 3 main collections in Firebase 
+Firestore. The system supports multiple user roles and handles the complete
+order lifecycle from creation to completion.
+
+================================================================================
+                          DATABASE COLLECTIONS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              USERS COLLECTION                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Collection Name: users                                                      │
+│                                                                             │
+│ Document ID: Auto-generated unique string                                   │
+│                                                                             │
+│ Fields:                                                                     │
+│   • name        - Full name of the user                                     │
+│   • username    - Unique login username                                     │
+│   • email       - Unique email address                                      │
+│   • password    - User password (stored as plain text - should be hashed)  │
+│   • role        - User role: Admin, Kitchen, Cashier, Customer            │
+│   • createdAt   - Timestamp when user was registered                       │
+│                                                                             │
+│ Purpose: Stores all system users (customers and staff)                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              MENU COLLECTION                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Collection Name: menu                                                       │
+│                                                                             │
+│ Document ID: Auto-generated unique string                                   │
+│                                                                             │
+│ Fields:                                                                     │
+│   • itemName    - Name of the menu item                                     │
+│   • description - Brief description of the item                             │
+│   • price       - Price of the item (number/decimal)                       │
+│   • available   - Boolean - whether item is currently available            │
+│   • createdAt   - Timestamp when item was added to menu                    │
+│                                                                             │
+│ Purpose: Stores all menu items that customers can order                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              ORDERS COLLECTION                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Collection Name: orders                                                     │
+│                                                                             │
+│ Document ID: Auto-generated unique string                                   │
+│                                                                             │
+│ Fields:                                                                     │
+│   • customerName - Name of the customer who placed the order              │
+│   • type         - Order type: "DINE_IN" or "PICKUP"                     │
+│   • status       - Current status of the order:                           │
+│                      - "NEW"         - Order just created                  │
+│                      - "IN_PROGRESS" - Kitchen is preparing the order      │
+│                      - "READY"       - Order ready for serving/pickup      │
+│                      - "COMPLETED"   - Order completed/picked up           │
+│                      - "CANCELLED"   - Order cancelled                    │
+│   • note         - Special instructions from customer                      │
+│   • items        - Array of items ordered:                                │
+│                      [{id, itemName, price}, ...]                          │
+│   • total        - Total order amount (sum of all item prices)           │
+│   • createdAt    - Timestamp when order was created                        │
+│                                                                             │
+│ Purpose: Stores all customer orders with their details                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                           DATA RELATIONSHIPS
+================================================================================
+
+DIAGRAM:
+
+    ┌──────────┐         ┌──────────┐         ┌──────────────────┐
+    │  USERS   │         │  ORDERS  │         │  MENU (items)    │
+    └────┬─────┘         └────┬─────┘         └────────┬─────────┘
+         │                    │                         │
+         │ 1                  │ N                       │
+         │                    │                         │
+         │ places             │ contains                │ referenced_in
+         │                    │                         │
+         └────────────────────┘                         │
+                       (via customerName field)          │
+                                                        │
+                                                        ▼
+                                               ┌──────────────────┐
+                                               │ Array in ORDER:  │
+                                               │ {id, itemName,   │
+                                               │  price}          │
+                                               └──────────────────┘
+
+
+RELATIONSHIP DETAILS:
+
+1. USER → ORDER (One-to-Many)
+   - A user can place multiple orders
+   - Each order is linked to one user via customerName field
+   - The relationship is implicit (not enforced by Firebase)
+
+2. ORDER → MENU_ITEM (via embedded array)
+   - Each order contains an array of items
+   - Each item in the array references a menu item (by id and itemName)
+   - This is an embedded relationship (denormalized)
+
+
+================================================================================
+                        SYSTEM WORKFLOW / LOGIC
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           1. USER REGISTRATION                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Step 1: User submits registration form
+           ↓
+   Step 2: System creates new document in 'users' collection
+           ↓
+   Step 3: User receives unique user_id (document ID)
+
+   Data Flow: UI → createUser() → users collection
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           2. MENU MANAGEMENT                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Admin Actions:
+   • Add new menu item → addMenuItem() → menu collection
+   • Update availability → updateMenuItemAvailability() 
+   • Delete menu item → deleteMenuItem()
+   • View all items → getMenuItems() / subscribeToMenu()
+
+   Customer View:
+   • Browse available items → subscribeToMenu() (real-time)
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           3. ORDER CREATION                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Step 1: Customer adds items to cart
+           ↓
+   Step 2: Customer submits order (checkout)
+           ↓
+   Step 3: System calculates total from items
+           ↓
+   Step 4: Create order document with:
+           - status: "NEW"
+           - items: array of {id, itemName, price}
+           - total: calculated sum
+           - createdAt: current timestamp
+           ↓
+   Step 5: Order added to 'orders' collection via createOrder()
+
+   Data Flow: Cart → createOrder() → orders collection
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           4. ORDER STATUS UPDATES                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Status Flow:
+
+   NEW ──────→ IN_PROGRESS ──────→ READY ──────→ COMPLETED
+                    │                    │
+                    │                    └────────→ (for pickup)
+                    │
+                    └─────────────────────────────→ CANCELLED
+
+   Kitchen Staff:
+   • View new orders: subscribeToOrders()
+   • Update status: updateOrderStatus(id, "IN_PROGRESS")
+   • Mark ready: updateOrderStatus(id, "READY")
+   
+   Customer:
+   • Track order: View order status in real-time
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           5. REAL-TIME UPDATES                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+   Firebase Features Used:
+   • onSnapshot() - Real-time listeners for:
+     - Menu items (availability changes)
+     - Orders (new orders, status updates)
+   
+   This allows:
+   - Kitchen to see new orders instantly
+   - Customers to see order status changes in real-time
+   - Admins to monitor all activity
+
+
+================================================================================
+                         USER ROLES & PERMISSIONS
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ROLE        │ DESCRIPTION                    │ ACCESS                      │
+├─────────────┼────────────────────────────────┼────────────────────────────┤
+│ Admin       │ System administrator           │ Full access                │
+│             │                                │ - Manage menu              │
+│             │                                │ - View all orders          │
+│             │                                │ - Manage users             │
+├─────────────┼────────────────────────────────┼────────────────────────────┤
+│ Kitchen     │ Kitchen staff                  │ Kitchen panel              │
+│             │                                │ - View incoming orders     │
+│             │                                │ - Update order status      │
+├─────────────┼────────────────────────────────┼────────────────────────────┤
+│ Cashier     │ Front counter staff            │ Sales/Payment              │
+│             │                                │ - View orders              │
+│             │                                │ - Process payments         │
+├─────────────┼────────────────────────────────┼────────────────────────────┤
+│ Customer    │ End user / diner               │ Customer interface         │
+│             │                                │ - Browse menu              │
+│             │                                │ - Place orders             │
+│             │                                │ - Track order status       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          ENUM VALUES REFERENCE
+================================================================================
+
+ORDER TYPE:
+  • DINE_IN   - Customer eating at restaurant
+  • PICKUP    - Customer taking food to go
+
+ORDER STATUS:
+  • NEW          - Just placed, not yet started
+  • IN_PROGRESS  - Kitchen is preparing
+  • READY        - Ready for serving/pickup
+  • COMPLETED    - Order finished
+  • CANCELLED    - Order cancelled
+
+USER ROLES:
+  • Admin
+  • Kitchen
+  • Cashier
+  • Customer
+
+
+================================================================================
+                              API FUNCTIONS
+================================================================================
+
+Menu Operations:
+  • getMenuItems()           - Get all menu items
+  • subscribeToMenu()        - Real-time menu updates
+  • addMenuItem()            - Add new menu item
+  • updateMenuItemAvailability() - Toggle item availability
+  • deleteMenuItem()          - Remove menu item
+
+Order Operations:
+  • getOrders()              - Get all orders
+  • subscribeToOrders()      - Real-time order updates
+  • createOrder()            - Create new order
+  • updateOrderStatus()      - Update order status
+
+User Operations:
+  • getUserByUsername()      - Find user by username
+  • createUser()             - Register new user
+
+
+================================================================================
+                              SUMMARY
+================================================================================
+
+This is a simple 3-collection Firebase Firestore database:
+
+1. USERS   - Stores customer and staff information
+2. MENU    - Stores available food items  
+3. ORDERS  - Stores customer orders with embedded items
+
+The system follows a real-time reactive pattern where changes to orders
+and menu items are immediately reflected to all connected clients via
+Firebase's onSnapshot functionality.
+
+The order status flows from NEW → IN_PROGRESS → READY → COMPLETED,
+or can be CANCELLED at any point.
+
+================================================================================

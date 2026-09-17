@@ -1,0 +1,59 @@
+{
+  "name": "restaurant-ordering-system",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^13.5.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-hot-toast": "^2.6.0",
+    "react-scripts": "5.0.1",
+    "web-vitals": "^2.1.4"
+  },
+  "scripts": {
+    "start": "vite --host 127.0.0.1",
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "index:knowledge": "node --env-file-if-exists=.env.local scripts/index-knowledge.mjs",
+    "mine:demo": "node scripts/run-python.mjs scripts/mine_recommendations.py --input docs/fixtures/transactions.json",
+    "mine:publish": "node --env-file-if-exists=.env.local scripts/run-python.mjs scripts/mine_recommendations.py --publish",
+    "test:server": "node --test tests/*.test.mjs",
+    "test:database": "node scripts/test-database.mjs",
+    "test:mining": "node scripts/run-python.mjs -m unittest discover -s scripts -p test_mining.py",
+    "appendices": "node scripts/export-appendices.mjs",
+    "test": "react-scripts test",
+    "test:ui": "react-scripts test --watchAll=false --runInBand"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@electric-sql/pglite-pgvector": "^0.0.9",
+    "@tailwindcss/vite": "^4.3.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "jsqr": "^1.4.0",
+    "tailwindcss": "^4.3.3",
+    "vite": "^7.3.6"
+  }
+}

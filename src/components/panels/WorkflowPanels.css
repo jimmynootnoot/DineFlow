@@ -1,0 +1,29 @@
+.workflow-section { padding: var(--space-6, 24px) 0; border-top: 1px solid var(--line-default); }
+.workflow-section h3 { margin: 0 0 16px; }
+.workflow-section p { max-width: 72ch; line-height: 1.6; }
+.workflow-controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: end; margin-bottom: 16px; }
+.workflow-controls h3 { margin: 0; margin-right: auto; align-self: center; }
+.workflow label { display: flex; flex-direction: column; gap: 8px; color: var(--ink-secondary); font-weight: 500; }
+.workflow input, .workflow select, .workflow textarea { padding: 10px 12px; min-height: 44px; border: 1px solid var(--line-default); border-radius: 8px; color: var(--ink-primary); background: var(--surface-raised); font: inherit; max-width: 100%; }
+.workflow button, .workflow a.hero-btn { min-height: 44px; }
+.workflow button:disabled { opacity: .5; cursor: wait; }
+.workflow-note { color: var(--ink-secondary); font-size: .875rem; }
+.workflow-error { color: var(--danger); }
+.workflow-prose { white-space: pre-wrap; }
+.workflow-metrics { display: flex; flex-wrap: wrap; gap: 24px 40px; margin: 24px 0; }
+.workflow-metrics dt { color: var(--ink-secondary); font-size: .875rem; }
+.workflow-metrics dd { margin: 6px 0 0; font-size: 1.5rem; font-variant-numeric: tabular-nums; }
+.workflow-table { width: 100%; overflow-x: auto; margin: 16px 0; }
+.workflow-table table { min-width: 560px; }
+.workflow-qr { display: block; width: 180px; height: 180px; background: white; margin: 16px 0; }
+.workflow-table-row { display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid var(--line-default); }
+.workflow-table-row p { margin: 8px 0; }
+.workflow button:focus-visible, .workflow input:focus-visible, .workflow select:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.tag--confirmed { color: var(--warning); background: var(--warning-subtle); }
+.tag--served { color: var(--success); background: var(--success-subtle); }
+@media(max-width: 600px) { .workflow-controls > label { flex: 1 1 140px; } .workflow-controls > button { width: 100%; } .workflow-metrics { gap: 20px; } .workflow-metrics > div { flex: 1 1 40%; } }
+@media print {
+  .workflow-controls, .sidebar, .assistant, .workflow .page-hero button { display: none; }
+  .workflow-qr { width: 200px; height: 200px; }
+  .workflow-table-row { break-inside: avoid; }
+}

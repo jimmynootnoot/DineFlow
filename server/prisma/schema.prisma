@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // The connection URL is configured in prisma.config.ts for Prisma v7+.
+  // Do not add `url = env("DATABASE_URL")` here; that will cause P1012.
+}
+
+enum Role {
+  CUSTOMER
+  ADMIN
+  KITCHEN
+  CASHIER
+}
+
+enum OrderType {
+  DINE_IN
+  PICKUP
+}
+
+enum OrderStatus {
+  NEW
+  IN_PROGRESS
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  ONLINE
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model User {
+  id        Int      @id @default(autoincrement()) @map("user_id")
+  username  String   @unique
+  name      String
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+  staffCode String?  @map("staff_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  orders    Order[]
+
+  @@map("users")
+}
+
+model MenuItem {
+  id          Int      @id @default(autoincrement()) @map("menu_id")
+  itemName    String   @map("item_name")
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  available   Boolean  @default(true) @map("availability_status")
+  orderItems  OrderItem[]
+
+  @@map("menu")
+}
+
+model Order {
+  id         Int          @id @default(autoincrement()) @map("order_id")
+  userId     Int          @map("user_id")
+  type       OrderType    @map("order_type")
+  status     OrderStatus  @default(NEW) @map("order_status")
+  createdAt  DateTime     @default(now()) @map("order_date")
+  total      Decimal      @default(0) @db.Decimal(10, 2) @map("total_amount")
+  note       String?      @map("note")
+  customer   User         @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+  payment    Payment?
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement()) @map("order_item_id")
+  orderId   Int     @map("order_id")
+  menuId    Int     @map("menu_id")
+  quantity  Int
+  subtotal  Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id])
+  menuItem  MenuItem @relation(fields: [menuId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            Int           @id @default(autoincrement()) @map("payment_id")
+  orderId       Int           @unique @map("order_id")
+  method        PaymentMethod @map("payment_method")
+  status        PaymentStatus @default(PAID) @map("payment_status")
+  paymentDate   DateTime      @default(now()) @map("payment_date")
+  order         Order         @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model SalesReport {
+  id          Int      @id @default(autoincrement()) @map("report_id")
+  reportDate  DateTime @map("report_date")
+  totalSales  Decimal  @db.Decimal(12, 2) @map("total_sales")
+  totalOrders Int      @map("total_orders")
+
+  @@unique([reportDate])
+  @@map("sales_reports")
+}

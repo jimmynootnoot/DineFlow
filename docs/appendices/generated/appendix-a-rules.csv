@@ -1,0 +1,17 @@
+Antecedent,Consequent,Support,Confidence,Lift,Source,Transactions,Dataset SHA256
+Garlic Rice + Iced Tea,Pork Sisig,0.1,1.0,3.3333333333333335,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Pork Sisig,Garlic Rice + Iced Tea,0.1,0.33333333333333337,3.3333333333333335,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Pork Sisig,Garlic Rice,0.3,1.0,2.5,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Chicken Sisig + Iced Tea,Plain Rice,0.2,1.0,2.5,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Iced Tea + Pork Sisig,Garlic Rice,0.1,1.0,2.5,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Plain Rice,Chicken Sisig + Iced Tea,0.2,0.5,2.5,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Garlic Rice,Iced Tea + Pork Sisig,0.1,0.25,2.5,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Garlic Rice,Pork Sisig,0.3,0.7499999999999999,2.4999999999999996,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Plain Rice,Chicken Sisig,0.4,1.0,2.0,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Iced Tea + Plain Rice,Chicken Sisig,0.2,1.0,2.0,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Chicken Sisig,Plain Rice,0.4,0.8,2.0,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Chicken Sisig,Iced Tea + Plain Rice,0.2,0.4,2.0,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Chicken Sisig + Plain Rice,Iced Tea,0.2,0.5,1.25,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Iced Tea,Chicken Sisig + Plain Rice,0.2,0.5,1.25,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Iced Tea,Plain Rice,0.2,0.5,1.25,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea
+Plain Rice,Iced Tea,0.2,0.5,1.25,simulated,10,c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea

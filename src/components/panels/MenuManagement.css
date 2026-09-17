@@ -1,0 +1,54 @@
+.menu-mgmt-form {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 20px;
+}
+
+.menu-mgmt-form__title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #E2E8F0;
+  font-weight: 600;
+}
+
+.menu-mgmt-form__row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.menu-mgmt-form__input {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.6);
+  color: #E2E8F0;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 200ms ease;
+}
+
+.menu-mgmt-form__input:focus {
+  outline: none;
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
+.menu-mgmt-form__input--price {
+  max-width: 120px;
+}
+
+.menu-mgmt-form__input::placeholder {
+  color: #475569;
+}
+
+@media (max-width: 768px) {
+  .menu-mgmt-form__row {
+    flex-direction: column;
+  }
+
+  .menu-mgmt-form__input--price {
+    max-width: none;
+  }
+}

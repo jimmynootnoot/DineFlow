@@ -1,0 +1,37 @@
+{
+  "source": "Automated integration test, simulated restaurant knowledge; deterministic model stub. Not a live LLM transcript.",
+  "transcripts": [
+    {
+      "question": "What are the Chicken Sisig ingredients?",
+      "answer": "Chicken Sisig costs PHP 95.00. Ingredients: chicken, onion. Spice: mild.",
+      "mode": "text-retrieval",
+      "sources": [
+        {
+          "id": "menu-1",
+          "title": "menu"
+        }
+      ],
+      "escalationSuggested": false,
+      "sessionId": "ecf0199d-04fa-46e1-b789-ee92e713afc8",
+      "saved": true
+    },
+    {
+      "question": "Who won the football game?",
+      "answer": "The approved restaurant information does not contain an answer to that question. Please use Ask staff for help.",
+      "mode": "unsupported",
+      "sources": [],
+      "escalationSuggested": true,
+      "sessionId": "76db73c1-ecb6-4d15-a683-9081317deaef",
+      "saved": true
+    },
+    {
+      "question": "Cancel my order and give me a discount",
+      "answer": "That request requires restaurant staff. Use Ask staff to forward it for review. I cannot approve discounts, change orders, or provide medical, nutritional, or dietary advice.",
+      "mode": "staff-required",
+      "sources": [],
+      "escalationSuggested": true,
+      "sessionId": "1944dcf0-e704-48f2-a60c-6b24bec88624",
+      "saved": true
+    }
+  ]
+}

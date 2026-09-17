@@ -1,0 +1,295 @@
+/* ═══════════════════════════════════════════════════════════════
+   Login — warm light ground, one dark-green action.
+   Tokens only; no raw hex below this line.
+   ═══════════════════════════════════════════════════════════════ */
+
+.lp-root {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--surface-base);
+  color: var(--ink-primary);
+  font-family: var(--font-ui);
+  overflow: hidden;
+}
+
+/* Decorative washes. Kept below the threshold where they read as
+   colour — they give the ground depth, not a hue. */
+.lp-orb {
+  position: absolute;
+  border-radius: var(--radius-pill);
+  background: var(--orb-color, var(--wash-neutral));
+  filter: blur(90px);
+  pointer-events: none;
+  will-change: transform;
+}
+.lp-orb--0 { width: 520px; height: 520px; top: -180px; left: -140px; }
+.lp-orb--1 { width: 420px; height: 420px; top: 38%;    right: -120px; }
+.lp-orb--2 { width: 320px; height: 320px; bottom: -110px; left: 28%; }
+.lp-orb--3 { width: 260px; height: 260px; top: 18%;    left: 52%; }
+.lp-orb--4 { width: 220px; height: 220px; bottom: 18%; right: 22%; }
+.lp-orb--5 { width: 180px; height: 180px; top: 62%;    left: 8%; }
+.lp-orb--6 { width: 140px; height: 140px; top: 8%;     right: 28%; }
+.lp-orb--7 { width: 360px; height: 360px; bottom: -120px; right: -100px; }
+
+.lp-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right,  var(--line-subtle) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line-subtle) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(ellipse at center, rgba(28,35,33,0.5), transparent 75%);
+  mask-image: radial-gradient(ellipse at center, rgba(28,35,33,0.5), transparent 75%);
+}
+
+/* ── Card ─────────────────────────────────────────────────────
+   The focal object on an otherwise empty page, so it earns
+   --elev-2. No border competing with the shadow. */
+.lp-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-8);
+  background: var(--surface-raised);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-2);
+}
+.lp-card__glow { display: none; }   /* the glow was the pink */
+
+.lp-card__header { margin-bottom: var(--space-8); }
+
+.lp-card__eyebrow {
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  margin-bottom: var(--space-4);
+}
+
+.lp-card__title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-2xl);
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-primary);
+  margin-bottom: var(--space-2);
+}
+
+.lp-card__sub {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--ink-secondary);
+}
+
+/* ── Form ─────────────────────────────────────────────────────*/
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.lp-field { display: flex; flex-direction: column; gap: var(--space-2); }
+
+/* Label above the field, always. Never placeholder-only. */
+.lp-field__label {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-secondary);
+}
+
+.lp-field__input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--ink-primary);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+  transition: var(--transition-color);
+}
+.lp-field__input::placeholder { color: var(--ink-tertiary); }
+.lp-field__input:focus {
+  outline: none;
+  border-color: var(--accent-40);
+  box-shadow: var(--focus-ring);
+}
+
+.lp-error {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--danger);
+  background: var(--danger-subtle);
+  border-radius: var(--radius-button);
+}
+
+.lp-notice {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--success);
+  background: var(--success-subtle);
+  border-radius: var(--radius-button);
+}
+
+/* ── Buttons ──────────────────────────────────────────────────
+   Exactly one primary on this view. */
+.lp-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-inverse);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-button);
+  box-shadow: none;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.lp-submit:hover:not(:disabled) { background: var(--accent-hover); }
+.lp-submit:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.lp-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.lp-ghost {
+  align-self: center;
+  padding: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition-color);
+}
+.lp-ghost:hover { color: var(--accent-hover); }
+.lp-ghost:focus-visible {
+  outline: none;
+  border-radius: var(--radius-button);
+  box-shadow: var(--focus-ring);
+}
+
+.lp-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--accent-40);
+  border-top-color: var(--ink-inverse);
+  border-radius: var(--radius-pill);
+  animation: lp-spin 700ms linear infinite;
+}
+@keyframes lp-spin { to { transform: rotate(360deg); } }
+
+/* ── Sign-up modal ────────────────────────────────────────────*/
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: rgba(28, 35, 33, 0.45);
+  overflow-y: auto;
+}
+
+.lp-modal {
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  background: var(--surface-raised);
+  border-radius: var(--radius-card);
+  box-shadow: var(--elev-2);
+}
+
+.lp-modal h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: var(--leading-xl);
+  letter-spacing: var(--tracking-tight);
+  font-weight: var(--weight-semibold);
+  color: var(--ink-primary);
+  margin-bottom: var(--space-2);
+}
+.lp-modal p {
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  color: var(--ink-secondary);
+}
+
+.lp-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  font-weight: var(--weight-medium);
+  color: var(--ink-secondary);
+}
+.lp-modal label input {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-family: var(--font-ui);
+  font-size: var(--text-base);
+  line-height: var(--leading-base);
+  color: var(--ink-primary);
+  background: var(--surface-sunken);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+  transition: var(--transition-color);
+}
+.lp-modal label input::placeholder { color: var(--ink-tertiary); }
+.lp-modal label input:focus {
+  outline: none;
+  border-color: var(--accent-40);
+  box-shadow: var(--focus-ring);
+}
+
+.lp-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+.lp-modal-footer .lp-ghost { align-self: auto; }
+
+/* Required / optional markers ride the semantic tokens instead of
+   inline hex in the component. */
+.lp-req { color: var(--danger); }
+.lp-opt {
+  color: var(--ink-tertiary);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-regular);
+}
+
+@media (max-width: 560px) {
+  .lp-root { padding: var(--space-4); }
+  .lp-card,
+  .lp-modal {
+    width: calc(100vw - var(--space-8));
+    min-width: 0;
+    padding: var(--pad-card);
+  }
+  .lp-field__input { min-width: 0; }
+}

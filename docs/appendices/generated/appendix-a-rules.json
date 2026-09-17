@@ -1,0 +1,397 @@
+{
+  "algorithm": "mlxtend.apriori",
+  "source": "simulated",
+  "generated_at": "2026-09-16T23:32:00.339589+00:00",
+  "transaction_count": 10,
+  "dataset_sha256": "c8f1d67ec8d68e2704ddf0528c1d4e644cf690a6287407eb0beddb6d1eb4fbea",
+  "min_support": 0.05,
+  "min_confidence": 0.25,
+  "min_lift_exclusive": 1,
+  "max_length": 3,
+  "frequent_itemset_count": 13,
+  "rule_count": 16,
+  "rules": [
+    {
+      "antecedent": [
+        "Garlic Rice",
+        "Iced Tea"
+      ],
+      "consequent": [
+        "Pork Sisig"
+      ],
+      "support": 0.1,
+      "confidence": 1.0,
+      "lift": 3.3333333333333335,
+      "antecedent_names": [
+        "Garlic Rice",
+        "Iced Tea"
+      ],
+      "consequent_names": [
+        "Pork Sisig"
+      ]
+    },
+    {
+      "antecedent": [
+        "Pork Sisig"
+      ],
+      "consequent": [
+        "Garlic Rice",
+        "Iced Tea"
+      ],
+      "support": 0.1,
+      "confidence": 0.33333333333333337,
+      "lift": 3.3333333333333335,
+      "antecedent_names": [
+        "Pork Sisig"
+      ],
+      "consequent_names": [
+        "Garlic Rice",
+        "Iced Tea"
+      ]
+    },
+    {
+      "antecedent": [
+        "Pork Sisig"
+      ],
+      "consequent": [
+        "Garlic Rice"
+      ],
+      "support": 0.3,
+      "confidence": 1.0,
+      "lift": 2.5,
+      "antecedent_names": [
+        "Pork Sisig"
+      ],
+      "consequent_names": [
+        "Garlic Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Chicken Sisig",
+        "Iced Tea"
+      ],
+      "consequent": [
+        "Plain Rice"
+      ],
+      "support": 0.2,
+      "confidence": 1.0,
+      "lift": 2.5,
+      "antecedent_names": [
+        "Chicken Sisig",
+        "Iced Tea"
+      ],
+      "consequent_names": [
+        "Plain Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Iced Tea",
+        "Pork Sisig"
+      ],
+      "consequent": [
+        "Garlic Rice"
+      ],
+      "support": 0.1,
+      "confidence": 1.0,
+      "lift": 2.5,
+      "antecedent_names": [
+        "Iced Tea",
+        "Pork Sisig"
+      ],
+      "consequent_names": [
+        "Garlic Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Plain Rice"
+      ],
+      "consequent": [
+        "Chicken Sisig",
+        "Iced Tea"
+      ],
+      "support": 0.2,
+      "confidence": 0.5,
+      "lift": 2.5,
+      "antecedent_names": [
+        "Plain Rice"
+      ],
+      "consequent_names": [
+        "Chicken Sisig",
+        "Iced Tea"
+      ]
+    },
+    {
+      "antecedent": [
+        "Garlic Rice"
+      ],
+      "consequent": [
+        "Iced Tea",
+        "Pork Sisig"
+      ],
+      "support": 0.1,
+      "confidence": 0.25,
+      "lift": 2.5,
+      "antecedent_names": [
+        "Garlic Rice"
+      ],
+      "consequent_names": [
+        "Iced Tea",
+        "Pork Sisig"
+      ]
+    },
+    {
+      "antecedent": [
+        "Garlic Rice"
+      ],
+      "consequent": [
+        "Pork Sisig"
+      ],
+      "support": 0.3,
+      "confidence": 0.7499999999999999,
+      "lift": 2.4999999999999996,
+      "antecedent_names": [
+        "Garlic Rice"
+      ],
+      "consequent_names": [
+        "Pork Sisig"
+      ]
+    },
+    {
+      "antecedent": [
+        "Plain Rice"
+      ],
+      "consequent": [
+        "Chicken Sisig"
+      ],
+      "support": 0.4,
+      "confidence": 1.0,
+      "lift": 2.0,
+      "antecedent_names": [
+        "Plain Rice"
+      ],
+      "consequent_names": [
+        "Chicken Sisig"
+      ]
+    },
+    {
+      "antecedent": [
+        "Iced Tea",
+        "Plain Rice"
+      ],
+      "consequent": [
+        "Chicken Sisig"
+      ],
+      "support": 0.2,
+      "confidence": 1.0,
+      "lift": 2.0,
+      "antecedent_names": [
+        "Iced Tea",
+        "Plain Rice"
+      ],
+      "consequent_names": [
+        "Chicken Sisig"
+      ]
+    },
+    {
+      "antecedent": [
+        "Chicken Sisig"
+      ],
+      "consequent": [
+        "Plain Rice"
+      ],
+      "support": 0.4,
+      "confidence": 0.8,
+      "lift": 2.0,
+      "antecedent_names": [
+        "Chicken Sisig"
+      ],
+      "consequent_names": [
+        "Plain Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Chicken Sisig"
+      ],
+      "consequent": [
+        "Iced Tea",
+        "Plain Rice"
+      ],
+      "support": 0.2,
+      "confidence": 0.4,
+      "lift": 2.0,
+      "antecedent_names": [
+        "Chicken Sisig"
+      ],
+      "consequent_names": [
+        "Iced Tea",
+        "Plain Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Chicken Sisig",
+        "Plain Rice"
+      ],
+      "consequent": [
+        "Iced Tea"
+      ],
+      "support": 0.2,
+      "confidence": 0.5,
+      "lift": 1.25,
+      "antecedent_names": [
+        "Chicken Sisig",
+        "Plain Rice"
+      ],
+      "consequent_names": [
+        "Iced Tea"
+      ]
+    },
+    {
+      "antecedent": [
+        "Iced Tea"
+      ],
+      "consequent": [
+        "Chicken Sisig",
+        "Plain Rice"
+      ],
+      "support": 0.2,
+      "confidence": 0.5,
+      "lift": 1.25,
+      "antecedent_names": [
+        "Iced Tea"
+      ],
+      "consequent_names": [
+        "Chicken Sisig",
+        "Plain Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Iced Tea"
+      ],
+      "consequent": [
+        "Plain Rice"
+      ],
+      "support": 0.2,
+      "confidence": 0.5,
+      "lift": 1.25,
+      "antecedent_names": [
+        "Iced Tea"
+      ],
+      "consequent_names": [
+        "Plain Rice"
+      ]
+    },
+    {
+      "antecedent": [
+        "Plain Rice"
+      ],
+      "consequent": [
+        "Iced Tea"
+      ],
+      "support": 0.2,
+      "confidence": 0.5,
+      "lift": 1.25,
+      "antecedent_names": [
+        "Plain Rice"
+      ],
+      "consequent_names": [
+        "Iced Tea"
+      ]
+    }
+  ],
+  "frequent_itemsets": [
+    {
+      "items": [
+        "Chicken Sisig"
+      ],
+      "support": 0.5
+    },
+    {
+      "items": [
+        "Garlic Rice"
+      ],
+      "support": 0.4
+    },
+    {
+      "items": [
+        "Iced Tea"
+      ],
+      "support": 0.4
+    },
+    {
+      "items": [
+        "Plain Rice"
+      ],
+      "support": 0.4
+    },
+    {
+      "items": [
+        "Pork Sisig"
+      ],
+      "support": 0.3
+    },
+    {
+      "items": [
+        "Chicken Sisig",
+        "Iced Tea"
+      ],
+      "support": 0.2
+    },
+    {
+      "items": [
+        "Chicken Sisig",
+        "Plain Rice"
+      ],
+      "support": 0.4
+    },
+    {
+      "items": [
+        "Garlic Rice",
+        "Iced Tea"
+      ],
+      "support": 0.1
+    },
+    {
+      "items": [
+        "Garlic Rice",
+        "Pork Sisig"
+      ],
+      "support": 0.3
+    },
+    {
+      "items": [
+        "Iced Tea",
+        "Plain Rice"
+      ],
+      "support": 0.2
+    },
+    {
+      "items": [
+        "Iced Tea",
+        "Pork Sisig"
+      ],
+      "support": 0.1
+    },
+    {
+      "items": [
+        "Chicken Sisig",
+        "Iced Tea",
+        "Plain Rice"
+      ],
+      "support": 0.2
+    },
+    {
+      "items": [
+        "Garlic Rice",
+        "Iced Tea",
+        "Pork Sisig"
+      ],
+      "support": 0.1
+    }
+  ]
+}
