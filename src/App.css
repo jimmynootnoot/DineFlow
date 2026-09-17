@@ -1133,6 +1133,53 @@ button.tag { border: none; transition: var(--transition-color); }
   .menu-cards { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* Customer shell on mobile: the icon-only side rail makes no sense for a
+   two-item guest nav, so it becomes a bottom tab bar instead. */
+@media (max-width: 720px) {
+  .sidebar--customer {
+    position: fixed;
+    inset: auto 0 0 0;
+    top: auto;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    z-index: 40;
+    border-top: 1px solid var(--line-inverse);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+  .sidebar--customer .sidebar__brand,
+  .sidebar--customer .sidebar__section,
+  .sidebar--customer .sidebar__avatar,
+  .sidebar--customer .sidebar__user-info { display: none; }
+  .sidebar--customer .sidebar__nav {
+    flex: 1;
+    flex-direction: row;
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  .sidebar--customer .nav-item {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+  .sidebar--customer .nav-item span:not(.nav-item__icon) { display: block; }
+  .sidebar--customer .sidebar__user {
+    flex: 0 0 auto;
+    border-top: none;
+    padding: var(--space-2);
+  }
+  .sidebar--customer .sidebar__logout { width: 44px; height: 44px; }
+
+  .main-area--customer { padding-bottom: 72px; }
+
+  /* Clear the bottom tab bar so the floating assistant button doesn't sit on top of it. */
+  .main-area--customer ~ .assistant { bottom: calc(72px + var(--space-4)); }
+}
+
 /* Proposal feature extensions: dish knowledge, recommendations, assistant, billing. */
 .sr-only {
   position: absolute;

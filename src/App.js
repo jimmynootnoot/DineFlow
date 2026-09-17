@@ -1081,7 +1081,7 @@ function App() {
       <ReceiptPanel order={orders.find(order=>order.id===receiptOrder?.id)||receiptOrder} onClose={() => setReceiptOrder(null)} />
 
       {/* ── Sidebar ── */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${user.role === 'Customer' ? 'sidebar--customer' : ''}`}>
         <div className="sidebar__brand">
           <div className="sidebar__logo"><Icon name="utensils" size={20} /></div>
           <span className="sidebar__name">DineFlow</span>
@@ -1118,7 +1118,7 @@ function App() {
       </aside>
 
       {/* ── Main area ── */}
-      <main className="main-area">
+      <main className={`main-area ${user.role === 'Customer' ? 'main-area--customer' : ''}`}>
         {renderPage()}
       </main>
       {user.role !== 'Kitchen' && <AssistantPanel key={user.id} menu={menu} orders={orders.filter(order=>order.customerId===user.id)} user={user} />}
