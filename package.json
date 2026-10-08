@@ -25,6 +25,7 @@
     "test:server": "node --test tests/*.test.mjs",
     "test:database": "node scripts/test-database.mjs",
     "test:analytics-data": "node scripts/test-analytics-data.mjs",
+    "menu:sync-images": "node --env-file-if-exists=.env.local scripts/sync-menu-images.mjs",
     "test:mining": "node scripts/run-python.mjs -m unittest discover -s scripts -p test_mining.py",
     "appendices": "node scripts/export-appendices.mjs",
     "test": "react-scripts test",
