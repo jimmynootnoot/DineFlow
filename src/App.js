@@ -392,7 +392,12 @@ function App() {
 
   const displayedMenu = useMemo(() => menu
     .filter(i => menuCategory === 'All' || i.category === menuCategory)
-    .filter(i => !menuSearch || i.name.toLowerCase().includes(menuSearch.toLowerCase())),
+    .filter(i => {
+      const query = menuSearch.trim().toLowerCase();
+      return !query || [i.name, i.description, i.category]
+        .filter(Boolean)
+        .some(value => value.toLowerCase().includes(query));
+    }),
     [menu, menuCategory, menuSearch]);
 
   const myOrders = useMemo(() => {
@@ -797,8 +802,9 @@ function App() {
     <div className="page-content">
       <div className="page-hero">
         <div>
-          <h2 className="page-title">Menu Items</h2>
-          <p className="page-sub">Manage your menu — toggle availability, add or edit dishes</p>
+          <p className="page-eyebrow">DineFlow Kitchen</p>
+          <h2 className="page-title">Restaurant Menu</h2>
+          <p className="page-sub">Curate your Filipino menu, keep stock current, and control what guests can order.</p>
         </div>
         {canManageMenu && (
           <div className="hero-actions">
@@ -872,56 +878,97 @@ function App() {
         </div>
       )}
 
-      <div className="card">
+      <section className="menu-admin" aria-labelledby="menu-catalog-title">
+        <div className="menu-admin__summary">
+          <div>
+            <p className="menu-admin__kicker">Menu overview</p>
+            <h3 id="menu-catalog-title">Your dining catalog</h3>
+            <p>{menu.filter(item => item.available).length} dishes available across {Math.max(menuCategories.length - 1, 0)} sections.</p>
+          </div>
+          <dl className="menu-admin__metrics">
+            <div><dt>{menu.length}</dt><dd>Total dishes</dd></div>
+            <div><dt>{menu.filter(item => item.available).length}</dt><dd>Available</dd></div>
+            <div><dt>{menu.filter(item => (item.stock ?? 0) <= 5).length}</dt><dd>Low stock</dd></div>
+          </dl>
+        </div>
+
         <div className="menu-toolbar">
           <div className="pos-search-wrap">
             <Icon name="search" />
-            <input className="pos-search" placeholder="Search menu" value={menuSearch} onChange={e => setMenuSearch(e.target.value)} />
+            <input className="pos-search" aria-label="Search menu items" placeholder="Search dishes, descriptions, or categories" value={menuSearch} onChange={e => setMenuSearch(e.target.value)} />
           </div>
-          <div className="cat-strip">
+          <div className="cat-strip" aria-label="Filter menu by category">
             {menuCategories.map(c => (
-              <button key={c} className={`cat-pill ${menuCategory === c ? 'active' : ''}`} onClick={() => setMenuCategory(c)}>{c}</button>
+              <button type="button" key={c} className={`cat-pill ${menuCategory === c ? 'active' : ''}`} aria-pressed={menuCategory === c} onClick={() => setMenuCategory(c)}>{c}</button>
             ))}
           </div>
         </div>
 
-        <table className="orders-table">
-          <thead>
-            <tr><th /><th>Name</th><th>Category</th><th className="num">Price</th><th className="num">Stock</th><th>Status</th>{canManageMenu && <th />}</tr>
-          </thead>
-          <tbody>
+        <p className="menu-admin__result-count" aria-live="polite">Showing {displayedMenu.length} of {menu.length} dishes</p>
+
+        {displayedMenu.length > 0 ? (
+          <div className="menu-admin-grid">
             {displayedMenu.map(item => (
-              <tr key={item.id} className={!item.available ? 'row-dim' : ''}>
-                <td>
-                  {item.image
-                    ? <img src={item.image} alt="" loading="lazy" className="tbl-thumb" onError={e => { e.target.style.display = 'none'; }} />
-                    : <div className="tbl-thumb-ph">{item.name[0]}</div>
-                  }
-                </td>
-                <td><span className="tbl-name">{item.name}</span>{item.description && <p className="tbl-desc">{item.description}</p>}</td>
-                <td><span className="tag tag--cat">{item.category}</span></td>
-                <td className="num order-total">{currency(item.price)}</td>
-                <td className="num">{item.stock ?? '—'}</td>
-                <td>
-                  <button disabled={!canManageMenu} className={`tag tag--${item.available ? 'completed' : 'cancelled'}`}
-                    onClick={() => toggleAvailability(item.id, !item.available)}>
-                    {item.available ? 'Available' : 'Sold Out'}
-                  </button>
-                </td>
-                {canManageMenu && (
-                  <td>
-                    <div className="tbl-actions">
-                      <button className="tbl-btn" onClick={() => startEdit(item)}><Icon name="pencil" size={13} /> Edit</button>
-                      <button className="tbl-btn tbl-btn--red" onClick={() => handleDeleteMenuItem(item.id)}><Icon name="trash" size={13} /> Delete</button>
+              <article key={item.id} className={`menu-admin-card ${!item.available ? 'is-unavailable' : ''}`}>
+                <div className="menu-admin-card__media">
+                  <img
+                    src={getMenuImage(item)}
+                    alt={`${item.name}, ${item.category || 'menu dish'}`}
+                    loading="lazy"
+                    onError={e => {
+                      if (e.currentTarget.dataset.fallbackApplied) return;
+                      e.currentTarget.dataset.fallbackApplied = 'true';
+                      e.currentTarget.src = getMenuImageFallback(item);
+                    }}
+                  />
+                  <span className="menu-admin-card__category">{item.category}</span>
+                  {item.featured && <span className="menu-admin-card__featured">House favorite</span>}
+                </div>
+
+                <div className="menu-admin-card__body">
+                  <div className="menu-admin-card__heading">
+                    <div>
+                      <h3>{item.name}</h3>
+                      <p>{item.description || 'A house dish prepared fresh for every order.'}</p>
                     </div>
-                  </td>
-                )}
-              </tr>
+                    <strong>{currency(item.price)}</strong>
+                  </div>
+
+                  <dl className="menu-admin-card__details">
+                    <div><dt>Stock</dt><dd className={(item.stock ?? 0) <= 5 ? 'is-low' : ''}>{item.stock ?? '—'}</dd></div>
+                    <div><dt>Serving</dt><dd>{item.servingSize || '1 serving'}</dd></div>
+                    <div><dt>Prep</dt><dd>{item.prepMinutes || 15} min</dd></div>
+                  </dl>
+
+                  <div className="menu-admin-card__footer">
+                    <button
+                      type="button"
+                      disabled={!canManageMenu}
+                      className={`menu-admin-card__status ${item.available ? 'is-available' : 'is-sold-out'}`}
+                      aria-label={`${item.name} is ${item.available ? 'available' : 'sold out'}. Toggle availability`}
+                      onClick={() => toggleAvailability(item.id, !item.available)}
+                    >
+                      <span className="menu-admin-card__status-dot" aria-hidden="true" />
+                      {item.available ? 'Available' : 'Sold out'}
+                    </button>
+                    {canManageMenu && (
+                      <div className="menu-admin-card__actions">
+                        <button type="button" className="tbl-btn" onClick={() => startEdit(item)}><Icon name="pencil" size={13} /> Edit</button>
+                        <button type="button" className="tbl-btn tbl-btn--red" onClick={() => handleDeleteMenuItem(item.id)}><Icon name="trash" size={13} /> Delete</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </article>
             ))}
-            {displayedMenu.length === 0 && <tr><td colSpan={7} className="table-empty">No items match this filter.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        ) : (
+          <div className="menu-admin__empty">
+            <p>No dishes match this search.</p>
+            <button type="button" className="hero-btn hero-btn--outline" onClick={() => { setMenuSearch(''); setMenuCategory('All'); }}>Clear filters</button>
+          </div>
+        )}
+      </section>
     </div>
   );
 
