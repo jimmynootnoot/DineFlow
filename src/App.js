@@ -16,7 +16,7 @@ import DishDetails from './components/menu/DishDetails';
 import CartRecommendations from './components/menu/CartRecommendations';
 import ReceiptPanel from './components/orders/ReceiptPanel';
 import StaffRequests from './components/staff/StaffRequests';
-import ResearchReports from './components/panels/ResearchReports';
+import ResearchReports from './components/panels/ResearchReportsV2';
 import TableSessions from './components/panels/TableSessions';
 import AdminSettings from './components/panels/AdminSettings';
 import BillingControls from './components/orders/BillingControls';

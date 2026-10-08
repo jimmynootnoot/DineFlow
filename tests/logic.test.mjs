@@ -41,9 +41,13 @@ test('fallback is actual same-category bestseller only',()=>{
 test('Philippine date boundaries and paid completed revenue use decimal cents',()=>{
   const bounds=periodBounds('2026-09-01','2026-09-01');
   assert.equal(bounds.from,'2026-08-31T16:00:00.000Z');assert.equal(bounds.to,'2026-09-01T16:00:00.000Z');
-  const order={status:'completed',payment_status:'paid',total_amount:'0.10',created_at:'2026-09-01T00:00:00.000Z',order_items:[]};
-  const result=aggregateSales([order,{...order,total_amount:'0.20'},{...order,status:'cancelled',total_amount:'100'}],bounds);
-  assert.equal(result.revenue,.3);assert.equal(result.completedOrders,2);assert.equal(result.changePercent,null);
+  const item={menu_item_id:'A',name:'Adobo',quantity:1,price:'0.10'};
+  const order={status:'completed',payment_status:'paid',total_amount:'0.10',created_at:'2026-09-01T00:00:00.000Z',order_items:[item]};
+  const prior={...order,created_at:'2026-08-31T00:00:00.000Z',order_items:[{...item,quantity:1}]};
+  const result=aggregateSales([order,{...order,total_amount:'0.20'},{...order,status:'cancelled',total_amount:'100'},prior],bounds);
+  assert.equal(result.revenue,.3);assert.equal(result.completedOrders,2);assert.equal(result.changePercent,200);
+  assert.equal(result.itemTrends[0].quantity,2);assert.equal(result.itemTrends[0].previousQuantity,1);
+  assert.equal(result.itemTrends[0].quantityChange,1);assert.equal(result.itemTrends[0].trend,'up');
   assert.throws(()=>periodBounds('2026-09-03','2026-09-01'));assert.throws(()=>periodBounds('2026-02-30','2026-03-01'));
 });
 test('sensitive requests escalate and unrelated queries retrieve no context',()=>{
