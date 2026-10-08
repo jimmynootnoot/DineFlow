@@ -1,445 +1,172 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { recordPayment } from '../../services/reportService';
+import { DEMO_PAYMENT } from '../../../serverlib/demo-payment.mjs';
 import './MayaCheckout.css';
 import Icon from '../ui/Icon';
 import { useModalFocus } from '../../hooks/useModalFocus';
 import { encodeQR } from './qr';
 
-// ─── Sandbox authorisation ───────────────────────────────────
-// Card 4111 1111 1111 1111 · Exp 12/28 · CVV 123 · OTP 123456
-const DEMO_OTP = '123456';
-
-const steps = {
-  METHOD: 'METHOD',
-  DETAILS: 'DETAILS',
-  OTP: 'OTP',
-  SUCCESS: 'SUCCESS',
-  ERROR: 'ERROR',
-};
-
+const STEP = { METHOD: 'METHOD', DETAILS: 'DETAILS', REVIEW: 'REVIEW', VERIFY: 'VERIFY', PROCESSING: 'PROCESSING', SUCCESS: 'SUCCESS', ERROR: 'ERROR' };
 const METHODS = [
-  { id: 'CARD',   icon: 'card',    label: 'Credit or debit card', hint: 'Visa, Mastercard, JCB' },
-  { id: 'GCASH',  icon: 'bag',     label: 'GCash',                hint: 'Pay with your GCash wallet' },
-  { id: 'BANK',   icon: 'book',    label: 'Online banking',       hint: 'BPI, BDO, UnionBank, Metrobank' },
-    { id: 'QR',     icon: 'grid',    label: 'QR simulation',        hint: 'Test a payment reference' },
-  { id: 'CASH',   icon: 'peso',    label: 'Cash at the counter',  hint: 'Pay the cashier when you collect' },
+  { id: 'CARD', icon: 'card', label: 'Credit or debit card', hint: 'Visa or Mastercard test card' },
+  { id: 'GCASH', icon: 'bag', label: 'GCash', hint: 'Authorize a test wallet' },
+  { id: 'BANK', icon: 'book', label: 'Online banking', hint: 'Approve from a test bank account' },
+  { id: 'QR', icon: 'grid', label: 'QR Ph', hint: 'Simulate payment from a banking app' },
 ];
+const BANKS = ['BPI', 'BDO', 'UnionBank', 'Metrobank', 'Landbank'];
+const METHOD_LABEL = { CARD: 'Card', GCASH: 'GCash', BANK: 'Online banking', QR: 'QR Ph', CASH: 'Cash at counter' };
+const peso = value => new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(Number(value || 0));
+const digits = (value, max) => String(value || '').replace(/\D/g, '').slice(0, max);
+const formatCard = value => digits(value, 16).replace(/(.{4})/g, '$1 ').trim();
+const formatMobile = value => { const d = digits(value, 11); return [d.slice(0, 4), d.slice(4, 7), d.slice(7)].filter(Boolean).join(' '); };
+const blankForm = () => ({ card: { number: '', expiry: '', cvv: '', name: '' }, mobile: '', bank: BANKS[0], account: '' });
 
-const BANKS = ['BPI', 'BDO', 'UnionBank', 'Metrobank', 'Landbank', 'Security Bank', 'RCBC', 'PNB'];
-
-const METHOD_LABEL = {
-  CARD: 'card', GCASH: 'GCash', BANK: 'online banking', QR: 'QR Ph', CASH: 'cash',
-};
-
-const peso = (value) => `₱${Number(value || 0).toFixed(2)}`;
-const digits = (value, max) => String(value).replace(/\D/g, '').slice(0, max);
-const formatCard = (value) => digits(value, 16).replace(/(.{4})/g, '$1 ').trim();
-const formatMobile = (value) => {
-  const d = digits(value, 11);
-  return [d.slice(0, 4), d.slice(4, 7), d.slice(7, 11)].filter(Boolean).join(' ');
-};
-
-const blankState = () => ({
-  card: { number: '', expiry: '', cvv: '', name: '' },
-  mobile: '',
-  bank: BANKS[0],
-  account: '',
-});
-
-function QrCanvas({ payload }) {
-  const symbol = useMemo(() => {
-    try { return encodeQR(payload); } catch { return null; }
-  }, [payload]);
-
-  if (!symbol) return <p className="maya-qr__fallback">This code could not be generated. Choose another method.</p>;
-
-  const { size, modules } = symbol;
+function QrCode({ payload }) {
+  const symbol = useMemo(() => { try { return encodeQR(payload); } catch { return null; } }, [payload]);
+  if (!symbol) return <p className="maya-note" role="alert">The test QR could not be generated. Choose another method.</p>;
   const quiet = 4;
-  const span = size + quiet * 2;
   const cells = [];
-  for (let r = 0; r < size; r += 1) {
-    for (let c = 0; c < size; c += 1) {
-      if (modules[r][c]) cells.push(`M${c + quiet} ${r + quiet}h1v1h-1z`);
-    }
+  for (let row = 0; row < symbol.size; row += 1) for (let column = 0; column < symbol.size; column += 1) {
+    if (symbol.modules[row][column]) cells.push(`M${column + quiet} ${row + quiet}h1v1h-1z`);
   }
-  return (
-    // Pure black on pure white is deliberate and the one place the warm
-    // palette is wrong: scanners rely on maximum luminance contrast.
-    <svg className="maya-qr__code" viewBox={`0 0 ${span} ${span}`} role="img"
-      aria-label="QR code containing this order's payment reference" shapeRendering="crispEdges">
-      <rect width={span} height={span} fill="#ffffff" />
-      <path d={cells.join('')} fill="#000000" />
-    </svg>
-  );
+  const span = symbol.size + quiet * 2;
+  return <svg className="maya-qr__code" viewBox={`0 0 ${span} ${span}`} role="img" aria-label="Demo QR payment code" shapeRendering="crispEdges">
+    <rect width={span} height={span} fill="#fff"/><path d={cells.join('')} fill="#000"/>
+  </svg>;
 }
 
-const MayaCheckout = ({ open, onClose, orderId, total, onPaymentComplete }) => {
-  const [step, setStep] = useState(steps.METHOD);
+export default function MayaCheckout({ open, onClose, orderId, orderNumber, total, onPaymentComplete }) {
+  const [step, setStep] = useState(STEP.METHOD);
   const [method, setMethod] = useState(null);
-  const [form, setForm] = useState(blankState);
+  const [form, setForm] = useState(blankForm);
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [qrScanned, setQrScanned] = useState(false);
+  const [payment, setPayment] = useState(null);
+  const [retryStep, setRetryStep] = useState(STEP.VERIFY);
 
-  const reset = () => {
-    setStep(steps.METHOD);
-    setMethod(null);
-    setForm(blankState());
-    setOtp('');
-    setError('');
-    setLoading(false);
-    setQrScanned(false);
-  };
-
+  const reset = () => { setStep(STEP.METHOD); setMethod(null); setForm(blankForm()); setOtp(''); setError(''); setPayment(null); setRetryStep(STEP.VERIFY); };
   useEffect(() => { if (open) reset(); }, [open]);
+  const close = () => { if (step !== STEP.PROCESSING) { reset(); onClose(); } };
+  const dialogRef = useModalFocus(open, close);
+  const reference = useMemo(() => (String(orderId || '').replace(/\D/g, '').slice(-6) || '000000').padStart(6, '0'), [orderId]);
+  const shownOrder = orderNumber || `#${String(orderId || '').slice(-8).toUpperCase()}`;
+  const qrPayload = `PH.QR.DINEFLOW/${reference}?amt=${Number(total || 0).toFixed(2)}&cur=PHP&mode=DEMO`;
+  const selected = METHODS.find(item => item.id === method);
 
-  const resetAndClose = () => { reset(); onClose(); };
-  const dialogRef = useModalFocus(open, resetAndClose);
-
-  // A stable per-order reference so the QR and the settlement agree.
-  const reference = useMemo(() => {
-    const seed = String(orderId || '').replace(/\D/g, '').slice(-6) || '000000';
-    return seed.padStart(6, '0');
-  }, [orderId]);
-
-  const qrPayload = useMemo(
-    () => `PH.QR.DINEFLOW/${reference}?amt=${Number(total || 0).toFixed(2)}&cur=PHP`,
-    [reference, total],
-  );
-
-  // The settlement RPC keys every payment on a 4-digit reference,
-  // whatever the method: card tail, mobile tail, account tail, or the
-  // QR reference itself.
-  const settlementRef = () => {
-    if (method === 'CARD') return digits(form.card.number, 16).slice(-4);
-    if (method === 'GCASH') return digits(form.mobile, 11).slice(-4);
-    if (method === 'BANK') return digits(form.account, 12).slice(-4);
-    return reference.slice(-4);
+  const instrument = () => {
+    if (method === 'CARD') return digits(form.card.number, 16);
+    if (method === 'GCASH') return digits(form.mobile, 11);
+    if (method === 'BANK') return digits(form.account, 10);
+    return `QR:${reference.slice(-4)}`;
+  };
+  const paymentReference = () => instrument().replace(/\D/g, '').slice(-4) || reference.slice(-4);
+  const maskedAccount = () => {
+    if (method === 'CARD') return `Card ending ${paymentReference()}`;
+    if (method === 'GCASH') return `GCash ${formatMobile(form.mobile).replace(/^.{4}/, '••••')}`;
+    if (method === 'BANK') return `${form.bank} account ending ${paymentReference()}`;
+    return `QR reference ${reference}`;
   };
 
-  const chooseMethod = (id) => {
-    setMethod(id);
-    setError('');
-    setStep(steps.DETAILS);
-  };
-
-  const handleDetailsSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
+  const validateDetails = event => {
+    event.preventDefault(); setError('');
     if (method === 'CARD') {
-      if (digits(form.card.number, 16).length < 16) return setError('Enter a valid 16-digit card number.');
-      if (!/^\d{2}\/\d{2}$/.test(form.card.expiry)) return setError('Enter the expiry as MM/YY.');
-      if (Number(form.card.expiry.slice(0, 2)) < 1 || Number(form.card.expiry.slice(0, 2)) > 12) return setError('Enter a month between 01 and 12.');
-      if (form.card.cvv.length < 3) return setError('Enter a valid CVV.');
-      if (!form.card.name.trim()) return setError('Enter the cardholder name.');
+      if (![DEMO_PAYMENT.cardApproved, DEMO_PAYMENT.cardDeclined].includes(digits(form.card.number, 16))) return setError('Use one of the test card numbers shown above.');
+      if (!/^\d{2}\/\d{2}$/.test(form.card.expiry) || Number(form.card.expiry.slice(0, 2)) < 1 || Number(form.card.expiry.slice(0, 2)) > 12) return setError('Enter a valid expiry in MM/YY format.');
+      if (form.card.cvv !== '123') return setError('Use 123 as the demo CVV.');
+      if (form.card.name.trim().length < 2) return setError('Enter the name shown on the card.');
     }
-    if (method === 'GCASH' && digits(form.mobile, 11).length !== 11) {
-      return setError('Enter an 11-digit mobile number, e.g. 0917 123 4567.');
-    }
-    if (method === 'BANK' && digits(form.account, 12).length < 4) {
-      return setError('Enter at least the last 4 digits of your account number.');
-    }
-    if (method === 'QR' && !qrScanned) {
-        return setError('Confirm the simulated scan to continue.');
-    }
-    return setStep(steps.OTP);
+    if (method === 'GCASH' && digits(form.mobile, 11) !== DEMO_PAYMENT.walletMobile) return setError('Use 0917 123 4567 for the demo wallet.');
+    if (method === 'BANK' && digits(form.account, 10) !== DEMO_PAYMENT.bankAccount) return setError('Use 1234567890 for the demo bank account.');
+    setStep(STEP.REVIEW);
   };
 
-  const settle = async (paymentMethod) => {
-    setLoading(true);
-    setError('');
+  const settle = async ({ qr = false } = {}) => {
+    setStep(STEP.PROCESSING); setError('');
     try {
-      await recordPayment({
-        orderId,
-        method: paymentMethod,
-        amount: total,
-        cardLast4: settlementRef(),
-        sandboxOtp: otp.trim(),
-      });
-      setStep(steps.SUCCESS);
-      if (onPaymentComplete) onPaymentComplete({ method: paymentMethod, settled: true });
-    } catch (err) {
-      console.error('Payment failed', err);
-      setError(err.message || 'Payment processing failed.');
-      setStep(steps.ERROR);
-    } finally {
-      setLoading(false);
+      const [result] = await Promise.all([
+        recordPayment({ orderId, method, amount: total, cardLast4: paymentReference(), sandboxOtp: qr ? DEMO_PAYMENT.otp : otp, sandboxInstrument: instrument() }),
+        new Promise(resolve => setTimeout(resolve, 650)),
+      ]);
+      setPayment(result); setStep(STEP.SUCCESS);
+      onPaymentComplete?.({ method, settled: true, payment: result });
+    } catch (failure) {
+      setError(failure.message || 'The payment service could not complete this attempt.');
+      setRetryStep(['CARD_DECLINED', 'INVALID_DEMO_CARD', 'INVALID_DEMO_WALLET', 'INVALID_DEMO_BANK'].includes(failure.code) ? STEP.DETAILS : STEP.VERIFY);
+      setStep(STEP.ERROR);
     }
-  };
-
-  const handleOtpSubmit = (e) => {
-    e.preventDefault();
-    if (otp.trim() !== DEMO_OTP) {
-      setError(`Invalid OTP. Use the sandbox OTP ${DEMO_OTP}.`);
-      return;
-    }
-    settle(method);
-  };
-
-  // Cash is owed, not received: the order is placed unpaid and the
-  // cashier settles it at the counter. Nothing is recorded here.
-  const confirmCash = () => {
-    setStep(steps.SUCCESS);
-    if (onPaymentComplete) onPaymentComplete({ method: 'CASH', settled: false });
   };
 
   if (!open) return null;
+  const phase = [STEP.DETAILS, STEP.REVIEW, STEP.VERIFY, STEP.PROCESSING].includes(step);
+  return <div className="maya-overlay" onMouseDown={event => { if (event.target === event.currentTarget) close(); }}>
+    <section ref={dialogRef} className="maya-modal" role="dialog" aria-modal="true" aria-labelledby="payment-title" tabIndex={-1} aria-busy={step === STEP.PROCESSING}>
+      <header className="maya-modal__header">
+        <div className="maya-modal__brand"><span className="maya-modal__logo"><Icon name="card" size={18}/></span><div>
+          <p id="payment-title" className="maya-modal__brand-name">DineFlow Pay</p>
+          <p className="maya-modal__brand-sub">Secure checkout simulation · no real charge</p>
+        </div></div>
+        {step !== STEP.PROCESSING && <button type="button" className="maya-modal__close" onClick={close} aria-label="Close payment"><Icon name="x"/></button>}
+      </header>
 
-  const showsSteps = step === steps.DETAILS || step === steps.OTP;
-  const amountRow = (
-    <div className="maya-amount-row">
-      <span>Amount to pay</span>
-      <strong className="maya-amount">{peso(total)}</strong>
-    </div>
-  );
+      {phase && <ol className="maya-steps" aria-label="Payment progress">
+        {['Details', 'Review', 'Verify'].map((label, index) => {
+          const current = [STEP.DETAILS, STEP.REVIEW, STEP.VERIFY, STEP.PROCESSING].indexOf(step);
+          return <li key={label} className={`maya-step ${index === Math.min(current, 2) ? 'maya-step--active' : ''} ${index < current ? 'maya-step--done' : ''}`}><span>{index + 1}</span>{label}</li>;
+        })}
+      </ol>}
 
-  return (
-    <div className="maya-overlay">
-      <div ref={dialogRef} className="maya-modal" role="dialog" aria-modal="true" aria-labelledby="maya-dialog-title" tabIndex={-1}>
-        <header className="maya-modal__header">
-          <div className="maya-modal__brand">
-            <span className="maya-modal__logo"><Icon name="card" size={18} /></span>
-            <div>
-              <p id="maya-dialog-title" className="maya-modal__brand-name">Checkout</p>
-              <p className="maya-modal__brand-sub">Sandbox payment · no real money moves</p>
-            </div>
-          </div>
-          {step !== steps.SUCCESS && (
-            <button className="maya-modal__close" onClick={resetAndClose} aria-label="Close"><Icon name="x" size={15} /></button>
-          )}
-        </header>
+      <div className="maya-modal__body">
+        {step === STEP.METHOD && <div className="maya-stack">
+          <div className="maya-summary"><span>Order {shownOrder}</span><strong>{peso(total)}</strong></div>
+          <div><h2 className="maya-heading">Choose how to pay</h2><p className="maya-note">This demo follows a real checkout sequence and records the result in your order.</p></div>
+          <div className="maya-methods">{METHODS.map(option => <button key={option.id} type="button" className="maya-method" onClick={() => { setMethod(option.id); setStep(STEP.DETAILS); }}>
+            <span className="maya-method__icon"><Icon name={option.icon} size={18}/></span><span className="maya-method__text"><strong>{option.label}</strong><small>{option.hint}</small></span><Icon name="arrowRight"/>
+          </button>)}</div>
+          <div className="maya-divider"><span>or</span></div>
+          <button type="button" className="maya-btn-ghost" onClick={() => { setMethod('CASH'); setStep(STEP.SUCCESS); onPaymentComplete?.({ method: 'CASH', settled: false }); }}>Pay cash at the counter</button>
+        </div>}
 
-        {showsSteps && method !== 'CASH' && (
-          <div className="maya-steps">
-            <div className={`maya-step ${step === steps.DETAILS ? 'maya-step--active' : 'maya-step--done'}`}>
-              <span className="maya-step__dot">1</span>
-              <span>{METHODS.find((m) => m.id === method)?.label || 'Details'}</span>
-            </div>
-            <div className="maya-step__line" />
-            <div className={`maya-step ${step === steps.OTP ? 'maya-step--active' : ''}`}>
-              <span className="maya-step__dot">2</span>
-              <span>Confirm</span>
-            </div>
-          </div>
-        )}
+        {step === STEP.DETAILS && <form className="maya-stack" onSubmit={validateDetails}>
+          <div><button type="button" className="maya-back" onClick={() => setStep(STEP.METHOD)}>← Payment methods</button><h2 className="maya-heading">{selected?.label}</h2></div>
+          {method === 'CARD' && <>
+            <div className="maya-test-data"><strong>Test cards</strong><span>Approved: 4111 1111 1111 1111</span><span>Declined: 4000 0000 0000 0002</span><span>Expiry 12/28 · CVV 123</span></div>
+            <label className="maya-label">Card number<input aria-label="Card number" className="maya-input" inputMode="numeric" autoComplete="cc-number" placeholder="4111 1111 1111 1111" value={formatCard(form.card.number)} onChange={e => setForm(p => ({ ...p, card: { ...p.card, number: digits(e.target.value, 16) } }))}/></label>
+            <label className="maya-label">Name on card<input aria-label="Name on card" className="maya-input" autoComplete="cc-name" placeholder="Juan dela Cruz" maxLength={80} value={form.card.name} onChange={e => setForm(p => ({ ...p, card: { ...p.card, name: e.target.value } }))}/></label>
+            <div className="maya-form__row"><label className="maya-label">Expiry<input aria-label="Expiry" className="maya-input" inputMode="numeric" placeholder="12/28" maxLength={5} value={form.card.expiry} onChange={e => { const d = digits(e.target.value, 4); setForm(p => ({ ...p, card: { ...p.card, expiry: d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d } })); }}/></label><label className="maya-label">CVV<input aria-label="CVV" className="maya-input" type="password" inputMode="numeric" placeholder="123" maxLength={3} value={form.card.cvv} onChange={e => setForm(p => ({ ...p, card: { ...p.card, cvv: digits(e.target.value, 3) } }))}/></label></div>
+          </>}
+          {method === 'GCASH' && <><div className="maya-test-data"><strong>Test wallet</strong><span>Mobile: 0917 123 4567</span></div><label className="maya-label">GCash mobile number<input aria-label="GCash mobile number" className="maya-input" type="tel" inputMode="numeric" placeholder="0917 123 4567" value={formatMobile(form.mobile)} onChange={e => setForm(p => ({ ...p, mobile: digits(e.target.value, 11) }))}/></label></>}
+          {method === 'BANK' && <><div className="maya-test-data"><strong>Test bank account</strong><span>Account: 1234567890</span></div><label className="maya-label">Bank<select className="maya-input" value={form.bank} onChange={e => setForm(p => ({ ...p, bank: e.target.value }))}>{BANKS.map(bank => <option key={bank}>{bank}</option>)}</select></label><label className="maya-label">Account number<input aria-label="Account number" className="maya-input" inputMode="numeric" placeholder="1234567890" value={form.account} onChange={e => setForm(p => ({ ...p, account: digits(e.target.value, 10) }))}/></label></>}
+          {method === 'QR' && <div className="maya-qr"><QrCode payload={qrPayload}/><strong>{peso(total)}</strong><span className="maya-qr__ref">Reference {reference}</span><p className="maya-note">In a real checkout you would scan this in your bank or wallet app. Here, the button below safely simulates the provider confirmation.</p></div>}
+          {error && <p className="maya-error" role="alert">{error}</p>}
+          {method === 'QR' ? <button type="button" className="maya-btn-primary" onClick={() => settle({ qr: true })}>Simulate payment from banking app</button> : <button className="maya-btn-primary">Review payment</button>}
+        </form>}
 
-        <div className="maya-modal__body">
-          {/* ── CHOOSE A METHOD ── */}
-          {step === steps.METHOD && (
-            <div className="maya-methods">
-              <p className="maya-methods__lead">How would you like to pay {peso(total)}?</p>
-              {METHODS.map((option) => (
-                <button key={option.id} type="button" className="maya-method" onClick={() => chooseMethod(option.id)}>
-                  <span className="maya-method__icon"><Icon name={option.icon} size={18} /></span>
-                  <span className="maya-method__text">
-                    <span className="maya-method__label">{option.label}</span>
-                    <span className="maya-method__hint">{option.hint}</span>
-                  </span>
-                  <Icon name="arrowRight" size={15} />
-                </button>
-              ))}
-            </div>
-          )}
+        {step === STEP.REVIEW && <div className="maya-stack">
+          <div><button type="button" className="maya-back" onClick={() => setStep(STEP.DETAILS)}>← Edit details</button><h2 className="maya-heading">Review payment</h2><p className="maya-note">Confirm the amount and account before authorization.</p></div>
+          <dl className="maya-review"><div><dt>Order</dt><dd>{shownOrder}</dd></div><div><dt>Method</dt><dd>{METHOD_LABEL[method]}</dd></div><div><dt>Account</dt><dd>{maskedAccount()}</dd></div><div className="maya-review__total"><dt>Total</dt><dd>{peso(total)}</dd></div></dl>
+          <button type="button" className="maya-btn-primary" onClick={() => setStep(STEP.VERIFY)}>Authorize payment</button>
+          <p className="maya-secure"><Icon name="check"/> Demo credentials are validated before the order is marked paid.</p>
+        </div>}
 
-          {/* ── DETAILS PER METHOD ── */}
-          {step === steps.DETAILS && method === 'CASH' && (
-            <div className="maya-form">
-              <div className="maya-otp-info">
-                <span className="maya-otp-info__icon"><Icon name="peso" size={18} /></span>
-                <div>
-                  <p><strong>Pay {peso(total)} at the counter</strong></p>
-                  <p className="maya-otp-info__sub">
-                    Your order goes to the kitchen now. It stays marked unpaid until the cashier receives the cash.
-                  </p>
-                </div>
-              </div>
-              {amountRow}
-              <button type="button" className="maya-btn-primary" onClick={confirmCash}>
-                Place order, pay at counter
-              </button>
-              <button type="button" className="maya-btn-ghost" onClick={() => setStep(steps.METHOD)}>
-                Choose another method
-              </button>
-            </div>
-          )}
+        {step === STEP.VERIFY && <form className="maya-stack" onSubmit={event => { event.preventDefault(); if (otp !== DEMO_PAYMENT.otp) { setError(`Use ${DEMO_PAYMENT.otp} as the demo authorization code.`); return; } settle(); }}>
+          <div><button type="button" className="maya-back" onClick={() => setStep(STEP.REVIEW)}>← Back to review</button><h2 className="maya-heading">Verify your payment</h2><p className="maya-note">Enter the one-time authorization code. For this sandbox, use <strong>{DEMO_PAYMENT.otp}</strong>.</p></div>
+          <label className="maya-label">6-digit authorization code<input aria-label="6-digit authorization code" className="maya-input maya-input--otp" inputMode="numeric" autoComplete="one-time-code" placeholder="••••••" maxLength={6} value={otp} onChange={e => { setOtp(digits(e.target.value, 6)); setError(''); }}/></label>
+          {error && <p className="maya-error" role="alert">{error}</p>}
+          <div className="maya-summary"><span>Amount to authorize</span><strong>{peso(total)}</strong></div>
+          <button className="maya-btn-primary" disabled={otp.length !== 6}>Pay {peso(total)}</button>
+        </form>}
 
-          {step === steps.DETAILS && method !== 'CASH' && (
-            <form className="maya-form" onSubmit={handleDetailsSubmit}>
-              {method === 'CARD' && (
-                <>
-                  <div className="maya-demo-hint">
-                    <p>Sandbox card: <strong>4111 1111 1111 1111</strong> · Exp <strong>12/28</strong> · CVV <strong>123</strong></p>
-                  </div>
-                  <div className="maya-card-preview">
-                    <div className="maya-card-visual">
-                      <p className="maya-card-visual__bank">DineFlow Sandbox</p>
-                      <p className="maya-card-visual__number">
-                        {form.card.number ? formatCard(form.card.number) : '•••• •••• •••• ••••'}
-                      </p>
-                      <div className="maya-card-visual__bottom">
-                        <span>{form.card.name || 'CARDHOLDER NAME'}</span>
-                        <span>{form.card.expiry || 'MM/YY'}</span>
-                      </div>
-                    </div>
-                  </div>
+        {step === STEP.PROCESSING && <div className="maya-state" role="status"><span className="maya-spinner"/><h2 className="maya-heading">Authorizing payment</h2><p className="maya-note">Please keep this window open. We are validating the demo account and recording the transaction.</p></div>}
 
-                  <label className="maya-label" htmlFor="pay-card">Card number
-                    <input id="pay-card" className="maya-input" type="text" inputMode="numeric" autoComplete="cc-number"
-                      placeholder="4111 1111 1111 1111" maxLength={19} value={formatCard(form.card.number)}
-                      onChange={(e) => setForm((p) => ({ ...p, card: { ...p.card, number: digits(e.target.value, 16) } }))} />
-                  </label>
+        {step === STEP.SUCCESS && <div className="maya-state">
+          <span className="maya-state__icon maya-state__icon--success"><Icon name="check" size={28}/></span><p className="maya-eyebrow">{method === 'CASH' ? 'PAYMENT PENDING' : 'PAYMENT APPROVED'}</p><h2 className="maya-heading">{method === 'CASH' ? 'Pay at the counter' : 'Payment complete'}</h2>
+          <p className="maya-note">{method === 'CASH' ? 'Your order is confirmed and remains unpaid until the cashier receives your cash.' : 'The payment was recorded and your order can continue to preparation.'}</p>
+          <div className="maya-receipt"><div><span>Amount</span><strong>{peso(total)}</strong></div><div><span>Method</span><strong>{METHOD_LABEL[method]}</strong></div>{payment?.id && <div><span>Transaction</span><strong>{String(payment.id).slice(0, 8).toUpperCase()}</strong></div>}</div>
+          <button type="button" className="maya-btn-primary" onClick={close}>Return to order</button>
+        </div>}
 
-                  <label className="maya-label" htmlFor="pay-name">Cardholder name
-                    <input id="pay-name" className="maya-input" type="text" autoComplete="cc-name"
-                      placeholder="e.g. Juan dela Cruz" value={form.card.name}
-                      onChange={(e) => setForm((p) => ({ ...p, card: { ...p.card, name: e.target.value } }))} />
-                  </label>
-
-                  <div className="maya-form__row">
-                    <label className="maya-label maya-label--half" htmlFor="pay-exp">Expiry (MM/YY)
-                      <input id="pay-exp" className="maya-input" type="text" inputMode="numeric" autoComplete="cc-exp"
-                        placeholder="12/28" maxLength={5} value={form.card.expiry}
-                        onChange={(e) => {
-                          let v = digits(e.target.value, 4);
-                          if (v.length > 2) v = `${v.slice(0, 2)}/${v.slice(2)}`;
-                          setForm((p) => ({ ...p, card: { ...p.card, expiry: v } }));
-                        }} />
-                    </label>
-                    <label className="maya-label maya-label--half" htmlFor="pay-cvv">CVV
-                      <input id="pay-cvv" className="maya-input" type="password" inputMode="numeric" autoComplete="cc-csc"
-                        placeholder="123" maxLength={4} value={form.card.cvv}
-                        onChange={(e) => setForm((p) => ({ ...p, card: { ...p.card, cvv: digits(e.target.value, 4) } }))} />
-                    </label>
-                  </div>
-                </>
-              )}
-
-              {method === 'GCASH' && (
-                <>
-                  <div className="maya-demo-hint">
-                    <p>Sandbox wallet: any 11-digit mobile number, then OTP <strong>123456</strong>.</p>
-                  </div>
-                  <label className="maya-label" htmlFor="pay-mobile">GCash mobile number
-                    <input id="pay-mobile" className="maya-input" type="tel" inputMode="numeric" autoComplete="tel"
-                      placeholder="0917 123 4567" maxLength={13} value={formatMobile(form.mobile)}
-                      onChange={(e) => setForm((p) => ({ ...p, mobile: digits(e.target.value, 11) }))} />
-                  </label>
-                </>
-              )}
-
-              {method === 'BANK' && (
-                <>
-                  <div className="maya-demo-hint">
-                    <p>Sandbox transfer: any account digits, then OTP <strong>123456</strong>.</p>
-                  </div>
-                  <label className="maya-label" htmlFor="pay-bank">Bank
-                    <select id="pay-bank" className="maya-input" value={form.bank}
-                      onChange={(e) => setForm((p) => ({ ...p, bank: e.target.value }))}>
-                      {BANKS.map((bank) => <option key={bank}>{bank}</option>)}
-                    </select>
-                  </label>
-                  <label className="maya-label" htmlFor="pay-account">Account number
-                    <input id="pay-account" className="maya-input" type="text" inputMode="numeric"
-                      placeholder="Last 4 digits are enough" maxLength={12} value={form.account}
-                      onChange={(e) => setForm((p) => ({ ...p, account: digits(e.target.value, 12) }))} />
-                  </label>
-                </>
-              )}
-
-              {method === 'QR' && (
-                <div className="maya-qr">
-                  <QrCanvas payload={qrPayload} />
-                  <p className="maya-qr__ref">
-                    Reference <strong>{reference}</strong> · {peso(total)}
-                  </p>
-                  <p className="maya-qr__note">
-                    This code contains a demonstration payment reference. It is not a payable banking QR. No funds are transferred.
-                  </p>
-                  <label className="maya-check">
-                    <input type="checkbox" checked={qrScanned}
-                      onChange={(e) => { setQrScanned(e.target.checked); setError(''); }} />
-                      <span>Simulate a successful QR scan</span>
-                  </label>
-                </div>
-              )}
-
-              {error && <p className="maya-error" role="alert">{error}</p>}
-              {amountRow}
-
-              <button type="submit" className="maya-btn-primary">
-                Continue <Icon name="arrowRight" />
-              </button>
-              <button type="button" className="maya-btn-ghost" onClick={() => { setStep(steps.METHOD); setError(''); }}>
-                Choose another method
-              </button>
-            </form>
-          )}
-
-          {/* ── OTP ── */}
-          {step === steps.OTP && (
-            <form className="maya-form" onSubmit={handleOtpSubmit}>
-              <div className="maya-otp-info">
-                <span className="maya-otp-info__icon"><Icon name="card" size={18} /></span>
-                <div>
-                  <p><strong>Enter the code sent to your registered number</strong></p>
-                  <p className="maya-otp-info__sub">Sandbox OTP: <strong>{DEMO_OTP}</strong></p>
-                </div>
-              </div>
-
-              <label className="maya-label" htmlFor="pay-otp">6-digit code
-                <input id="pay-otp" className="maya-input maya-input--otp" type="text" inputMode="numeric"
-                  autoComplete="one-time-code" placeholder="123456" maxLength={6} value={otp}
-                  onChange={(e) => { setOtp(digits(e.target.value, 6)); setError(''); }} />
-              </label>
-
-              {error && <p className="maya-error" role="alert">{error}</p>}
-              {amountRow}
-
-              <button type="submit" className="maya-btn-primary" disabled={loading}>
-                {loading ? 'Processing' : `Pay ${peso(total)}`}
-              </button>
-              <button type="button" className="maya-btn-ghost" disabled={loading}
-                onClick={() => { setStep(steps.DETAILS); setError(''); setOtp(''); }}>
-                Back
-              </button>
-            </form>
-          )}
-
-          {/* ── SUCCESS ── */}
-          {step === steps.SUCCESS && (
-            <div className="maya-success">
-              <div className="maya-success__icon"><Icon name="check" size={26} /></div>
-              <h3>{method === 'CASH' ? 'Order placed' : 'Payment successful'}</h3>
-              <p>
-                {method === 'CASH'
-                  ? 'The kitchen has your order. Pay the cashier when you collect it.'
-                  : 'Your order has been paid and is now being prepared.'}
-              </p>
-              <p className="maya-success__amount">{peso(total)} · {METHOD_LABEL[method] || 'payment'}</p>
-              <button className="maya-btn-primary" onClick={resetAndClose}>Done</button>
-            </div>
-          )}
-
-          {/* ── ERROR ── */}
-          {step === steps.ERROR && (
-            <div className="maya-error-state">
-              <div className="maya-error-state__icon"><Icon name="x" size={26} /></div>
-              <h3>Payment failed</h3>
-              <p>{error}</p>
-              <button className="maya-btn-primary" onClick={() => { setStep(steps.OTP); setError(''); }}>
-                Try again
-              </button>
-              <button className="maya-btn-ghost" onClick={() => { setStep(steps.METHOD); setError(''); setOtp(''); }}>
-                Choose another method
-              </button>
-            </div>
-          )}
-        </div>
+        {step === STEP.ERROR && <div className="maya-state"><span className="maya-state__icon maya-state__icon--error"><Icon name="x" size={26}/></span><p className="maya-eyebrow">PAYMENT NOT COMPLETED</p><h2 className="maya-heading">We couldn’t authorize this payment</h2><p className="maya-error" role="alert">{error}</p><p className="maya-note">Your order is still unpaid. No duplicate payment was recorded.</p><button type="button" className="maya-btn-primary" onClick={() => { setError(''); setOtp(''); setStep(retryStep); }}>Try again</button><button type="button" className="maya-btn-ghost" onClick={() => { setError(''); setOtp(''); setStep(STEP.METHOD); }}>Choose another method</button></div>}
       </div>
-    </div>
-  );
-};
-
-export default MayaCheckout;
+    </section>
+  </div>;
+}

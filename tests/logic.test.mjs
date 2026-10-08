@@ -4,6 +4,7 @@ import { rankRecommendations } from '../serverlib/recommendations.mjs';
 import { aggregateSales,periodBounds } from '../serverlib/sales.mjs';
 import { needsStaff,lexicalKnowledge } from '../serverlib/assistant.mjs';
 import { validateMayaPayment } from '../serverlib/maya.mjs';
+import { DEMO_PAYMENT, validateDemoPayment } from '../serverlib/demo-payment.mjs';
 const menu=['A','B','C','D'].map(id=>({id,name:id,category:'Mains',available:true,stock:5}));
 const rule={id:'rule',run_id:'run',antecedent_ids:['A','B'],consequent_ids:['C'],source:'historical',support:.2,confidence:.8,lift:2};
 test('hosted Maya only settles a matching provider-verified success',()=>{
@@ -11,6 +12,16 @@ test('hosted Maya only settles a matching provider-verified success',()=>{
   const payment={id:'checkout',requestReferenceNumber:'reference',paymentStatus:'PAYMENT_SUCCESS',amount:'112.00',currency:'PHP'};
   assert.equal(validateMayaPayment(payment,attempt),true);
   for(const changes of [{amount:'1.00'},{currency:'USD'},{requestReferenceNumber:'other'},{id:'other'},{paymentStatus:'PENDING'}])assert.equal(validateMayaPayment({...payment,...changes},attempt),false);
+});
+test('demo payments require documented credentials and expose a safe decline path',()=>{
+  const base={otp:DEMO_PAYMENT.otp,expectedOtp:DEMO_PAYMENT.otp,reference:'1111'};
+  assert.equal(validateDemoPayment({...base,method:'CARD',instrument:DEMO_PAYMENT.cardApproved}).ok,true);
+  assert.equal(validateDemoPayment({...base,method:'CARD',instrument:DEMO_PAYMENT.cardDeclined}).code,'CARD_DECLINED');
+  assert.equal(validateDemoPayment({...base,method:'CARD',instrument:'5555555555554444'}).code,'INVALID_DEMO_CARD');
+  assert.equal(validateDemoPayment({...base,method:'GCASH',instrument:DEMO_PAYMENT.walletMobile}).ok,true);
+  assert.equal(validateDemoPayment({...base,method:'BANK',instrument:DEMO_PAYMENT.bankAccount}).ok,true);
+  assert.equal(validateDemoPayment({...base,method:'QR',instrument:'QR:1111'}).ok,true);
+  assert.equal(validateDemoPayment({...base,method:'CARD',instrument:DEMO_PAYMENT.cardApproved,otp:'000000'}).code,'INVALID_OTP');
 });
 test('entire antecedent is required, unavailable and already selected items excluded',()=>{
   assert.equal(rankRecommendations(['A'],menu,[rule],[]).length,0);

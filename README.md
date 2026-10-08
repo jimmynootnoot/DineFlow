@@ -90,9 +90,49 @@ Chat exchanges are persisted through a server-only function. Customers can acces
 
 Management selects a date range in Philippine time and requests an AI summary. The server aggregates data before calling the model; no customer identities or individual transactions are sent. Summaries are cached by range until regenerated. Revenue means completed, paid net bills; item performance is labeled gross sales. A model outage yields an explicitly labeled computed summary.
 
+### Sample data for analytics
+
+Run **`supabase/analytics-demo-data.sql`** in your development/demo project's Supabase SQL Editor after the database activation migrations above. It adds approximately 1,700 orders across the latest 90 Philippine-calendar days, with about 4,700 line items. The exact count depends on weekend dates. The data includes:
+
+- Completed paid bills and unpaid cancellations, dine-in and takeout orders.
+- Cash, card, GCash, bank and QR payment ledger entries (all simulated; no gateway calls).
+- Different quantities, senior/PWD sample discounts, weekend peaks and monthly growth.
+- Recurring meal combinations and rotating sales across the installed menu.
+
+Every order has a `DEMO-ANALYTICS-V1-` order number and `[DEMO ANALYTICS V1]` notes. Guests are fictional and are not attached to user accounts. The seed is transactional, leaves existing orders and current menu stock untouched, and skips demo order numbers already present. Repeating it on a later date adds new dates without removing older samples. These samples **will count in sales reports**, so use a development/demo database.
+
+After loading, open **Reports**, select the last 30 days, and choose **View period**. Compare with the prior 30 days, inspect item performance, and choose **Generate AI summary** (or **Regenerate summary** if a summary was cached before loading).
+
+To mine and publish only these samples as a clearly labeled simulated batch:
+
+```sh
+node --env-file=.env.local scripts/run-python.mjs scripts/mine_recommendations.py --demo-orders --publish --output tmp/analytics-demo/mining
+```
+
+The normal `npm run mine:publish` excludes these labeled samples from historical mining. Existing historical mining batches remain protected from replacement by a simulated batch.
+
+To verify and preview the dataset locally without connecting to Supabase:
+
+```sh
+npm run test:analytics-data
+node scripts/run-python.mjs scripts/mine_recommendations.py --input tmp/analytics-demo/transactions.json --output tmp/analytics-demo/mining
+```
+
+The isolated PostgreSQL test verifies bill/payment totals, cancellation handling, report comparisons, menu coverage, repeatability and preservation of existing data. It creates `tmp/analytics-demo/orders.csv`, `report.json` and `transactions.json` for inspection; these local previews are not loaded into the app automatically.
+
 ## Payment boundary
 
-Two explicit modes are available. Without merchant keys, the existing Maya-style checkout is a **local sandbox simulation**, including card/wallet/bank/QR demonstration paths and OTP authorization. Its QR is a reference, not a payable QR Ph code.
+Two explicit modes are available. Without merchant keys, DineFlow Pay is a **local sandbox simulation** with details, review, authorization, processing and receipt states. It records an approved demo transaction through the same server-side order/payment boundary used by the app. Its QR is a reference, not a payable QR Ph code.
+
+| Demo path | Test credential |
+|---|---|
+| Approved card | `4111 1111 1111 1111`, expiry `12/28`, CVV `123` |
+| Declined card | `4000 0000 0000 0002`, expiry `12/28`, CVV `123` |
+| GCash | `0917 123 4567` |
+| Online banking | Account `1234567890` |
+| Authorization code | `123456` |
+
+The server validates these demo instruments and the authorization code before settlement. A failed or declined attempt leaves the order unpaid. Cash-at-counter keeps the order unpaid until staff record the actual cash receipt.
 
 For the paper's external gateway demonstration, set server-only `MAYA_PUBLIC_KEY`, `MAYA_SECRET_KEY` (sandbox merchant keys) and `APP_BASE_URL`, then apply `se2-04-maya.sql`. Customer orders offer **Open Maya sandbox** and **Verify Maya payment**. The server creates the hosted checkout using the recorded bill, and verifies the payment ID, request reference, currency and exact amount through Maya before recording payment. Redirect query parameters and webhook payloads cannot mark a bill paid. Register your deployed `/api/maya-webhook` URL for Maya payment events; the webhook re-fetches the provider record before settlement. Use Verify after returning if the webhook has not arrived.
 

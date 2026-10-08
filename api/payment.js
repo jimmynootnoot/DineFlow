@@ -1,6 +1,4 @@
-// Cash is deliberately absent: it is settled at the counter by staff,
-// never authorised through this endpoint.
-const ONLINE_METHODS = new Set(['CARD', 'GCASH', 'BANK', 'QR']);
+import { ONLINE_PAYMENT_METHODS, validateDemoPayment } from '../serverlib/demo-payment.mjs';
 
 const config = () => ({
   supabaseUrl: process.env.SUPABASE_URL?.replace(/\/$/, ''),
@@ -51,22 +49,21 @@ export default async function handler(request, response) {
   if (Number(request.headers['content-length'] || 0) > 10_000) return response.status(413).json({ error: 'Request is too large' });
   const user = await authenticate(request);
   if (!user) return response.status(401).json({ error: 'Authentication required' });
-  if (!await consumeQuota(user.id)) return response.status(429).json({ error: 'Too many payment attempts' });
-
-  const { orderId, amount, cardLast4, sandboxOtp, method } = request.body || {};
+  const { orderId, amount, cardLast4, sandboxOtp, sandboxInstrument, method } = request.body || {};
   if (!/^[0-9a-f-]{36}$/i.test(String(orderId || ''))) return response.status(400).json({ error: 'Invalid order' });
   if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) return response.status(400).json({ error: 'Invalid amount' });
   // Every online method settles against a 4-digit reference: the card
   // tail, the wallet mobile tail, the bank account tail, or the QR
   // reference. Cash never reaches this endpoint — it is owed at the
   // counter, not authorised here.
-  if (!ONLINE_METHODS.has(String(method || 'CARD').toUpperCase())) {
+  if (!ONLINE_PAYMENT_METHODS.has(String(method || 'CARD').toUpperCase())) {
     return response.status(400).json({ error: 'Unsupported payment method' });
   }
   if (!/^\d{4}$/.test(String(cardLast4 || ''))) return response.status(400).json({ error: 'Invalid payment reference' });
-  if (String(sandboxOtp || '') !== config().sandboxOtp) return response.status(402).json({ error: 'Sandbox payment authorization failed' });
-
   const chosen = String(method || 'CARD').toUpperCase();
+  const demoCheck = validateDemoPayment({ method: chosen, instrument: sandboxInstrument, reference: cardLast4, otp: sandboxOtp, expectedOtp: config().sandboxOtp });
+  if (!demoCheck.ok) return response.status(demoCheck.status).json({ error: demoCheck.message, code: demoCheck.code });
+  if (!await consumeQuota(user.id)) return response.status(429).json({ error: 'Too many payment attempts. Wait one minute and try again.', code: 'RATE_LIMITED' });
 
   // settle_online_payment records the method the customer actually
   // chose. Without the migration we fall back to settle_maya_payment,

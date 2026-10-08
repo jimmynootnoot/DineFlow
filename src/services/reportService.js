@@ -44,7 +44,7 @@ export async function getPeriodComparison(days = 7) {
     changePercent: previousRevenue ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : null };
 }
 
-export async function recordPayment({ orderId, method, amount, cardLast4, sandboxOtp }) {
+export async function recordPayment({ orderId, method, amount, cardLast4, sandboxOtp, sandboxInstrument }) {
   if (String(method).toUpperCase() !== 'CASH') {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
@@ -57,10 +57,14 @@ export async function recordPayment({ orderId, method, amount, cardLast4, sandbo
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ orderId, amount: Number(amount), cardLast4, sandboxOtp, method: String(method || 'CARD').toUpperCase() }),
+      body: JSON.stringify({ orderId, amount: Number(amount), cardLast4, sandboxOtp, sandboxInstrument, method: String(method || 'CARD').toUpperCase() }),
     });
     const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error || 'Payment processing failed.');
+    if (!response.ok) {
+      const error = new Error(result.error || 'Payment processing failed.');
+      error.status = response.status; error.code = result.code;
+      throw error;
+    }
     return result;
   }
 

@@ -1063,6 +1063,7 @@ function App() {
         open={mayaOpen}
         onClose={() => setMayaOpen(false)}
         orderId={pendingOrderId}
+        orderNumber={pendingReceipt?.orderNumber}
         total={pendingOrderTotal}
         onPaymentComplete={({ method = 'CARD', settled = true } = {}) => {
           toast.success(settled ? 'Payment recorded.' : 'Order placed — pay at the counter.');

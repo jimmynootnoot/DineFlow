@@ -58,6 +58,7 @@ def read_all(session, url, headers, table, params):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, help="Simulated JSON baskets; never inserted as sales")
+    parser.add_argument("--demo-orders", action="store_true", help="Mine only labeled analytics demo orders, publishing as simulated")
     parser.add_argument("--publish", action="store_true", help="Atomically publish a complete batch")
     parser.add_argument("--output", type=Path, default=Path("docs/appendices/generated"))
     parser.add_argument("--min-support", type=float, default=0.05)
@@ -65,7 +66,9 @@ def main():
     parser.add_argument("--max-length", type=int, default=3)
     parser.add_argument("--min-transactions", type=int, default=5)
     args = parser.parse_args()
-    source = "simulated" if args.input else "historical"
+    if args.input and args.demo_orders:
+        parser.error("Choose either --input or --demo-orders.")
+    source = "simulated" if args.input or args.demo_orders else "historical"
     url, key = os.environ.get("SUPABASE_URL", "").rstrip("/"), os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
     headers = {"apikey": key, "Authorization": f"Bearer {key}"}
     session, menu = requests.Session(), []
@@ -88,6 +91,7 @@ def main():
         orders = read_all(session, url, headers, "orders", {
             "select": "id,order_items(menu_item_id)", "status": "eq.completed", "payment_status": "eq.paid",
             "created_at": f"lte.{cutoff}", "order": "id.asc",
+            "notes": "like.[DEMO ANALYTICS V1]*" if args.demo_orders else "not.like.[DEMO ANALYTICS V1]*",
         })
         transactions = [[item["menu_item_id"] for item in order["order_items"] if item["menu_item_id"]] for order in orders]
     baskets, itemsets, rules = mine(transactions, args.min_support, args.min_confidence, args.max_length)
