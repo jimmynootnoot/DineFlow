@@ -23,6 +23,7 @@ import BillingControls from './components/orders/BillingControls';
 import { supabase } from './services/supabase';
 import HostedMaya from './components/checkout/HostedMaya';
 import { serverRequest } from './services/platformService';
+import { getMenuImage, getMenuImageFallback } from './utils/menuPresentation';
 
 const currency  = (v) => `₱${Number(v || 0).toFixed(2)}`;
 const safeStatus = (s) => (s || 'pending').toLowerCase().replace('_', '-');
@@ -381,7 +382,12 @@ function App() {
 
   const filteredMenuItems = useMemo(() => availableMenu
     .filter(i => catFilter === 'All' || i.category === catFilter)
-    .filter(i => !menuSearchOrder || i.name.toLowerCase().includes(menuSearchOrder.toLowerCase())),
+    .filter(i => {
+      const query = menuSearchOrder.trim().toLowerCase();
+      return !query || [i.name, i.description, i.category]
+        .filter(Boolean)
+        .some(value => value.toLowerCase().includes(query));
+    }),
     [availableMenu, catFilter, menuSearchOrder]);
 
   const displayedMenu = useMemo(() => menu
@@ -546,8 +552,9 @@ function App() {
     <div className="page-content">
       <div className="page-hero">
         <div>
-          <h2 className="page-title">POS System</h2>
-          <p className="page-sub">{user.role === 'Customer' ? 'Browse the menu and place your order' : 'Create a customer order'}</p>
+          <p className="page-eyebrow">DineFlow Kitchen</p>
+          <h2 className="page-title">{user.role === 'Customer' ? 'Our Menu' : 'Point of Sale'}</h2>
+          <p className="page-sub">{user.role === 'Customer' ? 'Filipino comfort food, cooked with familiar flavors and served with care.' : 'Browse the dining menu and create a customer order.'}</p>
         </div>
         {cartCount > 0 && (
           <div className="cart-pill">
@@ -559,14 +566,25 @@ function App() {
       <div className="pos-layout">
         {/* Menu side */}
         <div className="pos-menu">
+          <section className="menu-welcome" aria-labelledby="menu-welcome-title">
+            <div className="menu-welcome__copy">
+              <span className="menu-welcome__kicker">Lutong Pinoy · Made to order</span>
+              <h3 id="menu-welcome-title">Kain tayo.</h3>
+              <p>From smoky inasal and sizzling sisig to merienda favorites, discover dishes made for sharing around the table.</p>
+            </div>
+            <dl className="menu-welcome__facts" aria-label="Menu overview">
+              <div><dt>{availableMenu.length}</dt><dd>available dishes</dd></div>
+              <div><dt>{Math.max(menuCategories.length - 1, 0)}</dt><dd>menu sections</dd></div>
+            </dl>
+          </section>
           <div className="pos-filters">
             <div className="pos-search-wrap">
               <Icon name="search" />
-              <input className="pos-search" placeholder="Search menu" value={menuSearchOrder} onChange={e => setMenuSearchOrder(e.target.value)} />
+              <input className="pos-search" aria-label="Search the menu" placeholder="Search dishes, flavors, or categories" value={menuSearchOrder} onChange={e => setMenuSearchOrder(e.target.value)} />
             </div>
-            <div className="cat-strip">
+            <div className="cat-strip" aria-label="Menu categories">
               {menuCategories.map(c => (
-                <button key={c} className={`cat-pill ${catFilter === c ? 'active' : ''}`} onClick={() => setCatFilter(c)}>{c}</button>
+                <button type="button" key={c} className={`cat-pill ${catFilter === c ? 'active' : ''}`} aria-pressed={catFilter === c} onClick={() => setCatFilter(c)}>{c}</button>
               ))}
             </div>
           </div>
@@ -574,19 +592,34 @@ function App() {
             {filteredMenuItems.map(item => {
               const inCart = cart.find(c => c.id === item.id);
               return (
-                <article key={item.id} className={`menu-card ${inCart ? 'in-cart' : ''}`}>
-                  {item.image
-                    ? <button type="button" className="menu-card__image-button" onClick={() => setSelectedDish(item)} aria-label={`View ${item.name} details`}><img src={item.image} alt={item.name} loading="lazy" onError={e => { e.target.style.display = 'none'; }} /></button>
-                    : <div className="menu-card__img-ph">{item.name[0]}</div>
-                  }
+                <article key={item.id} className={`menu-card ${inCart ? 'in-cart' : ''} ${item.featured ? 'is-featured' : ''}`}>
+                  <button type="button" className="menu-card__image-button" onClick={() => setSelectedDish(item)} aria-label={`View ${item.name} details`}>
+                    <img
+                      src={getMenuImage(item)}
+                      alt={`${item.name}, ${item.category || 'Filipino dish'}`}
+                      loading={item.featured ? 'eager' : 'lazy'}
+                      onError={e => {
+                        if (e.currentTarget.dataset.fallbackApplied) return;
+                        e.currentTarget.dataset.fallbackApplied = 'true';
+                        e.currentTarget.src = getMenuImageFallback(item);
+                      }}
+                    />
+                    <span className="menu-card__category">{item.category}</span>
+                    {item.featured && <span className="menu-card__featured">House favorite</span>}
+                  </button>
                   <div className="menu-card__body">
-                    <p className="menu-card__cat">{item.category}</p>
                     <button type="button" className="menu-card__name" onClick={() => setSelectedDish(item)}><h4>{item.name}</h4></button>
-                    <p className="menu-card__meta">{item.servingSize} · {item.prepMinutes} min</p>
+                    <p className="menu-card__description">{item.description || 'A comforting house dish prepared fresh for your order.'}</p>
+                    <div className="menu-card__meta">
+                      <span>{item.servingSize || '1 serving'}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{item.prepMinutes || 15} min</span>
+                      {item.spiceLevel && item.spiceLevel !== 'none' && <span className="menu-card__spice">{item.spiceLevel} spice</span>}
+                    </div>
                     <div className="menu-card__footer">
                       {inCart && <span className="qty-badge">×{inCart.quantity}</span>}
                       <span className="menu-card__price">{currency(item.price)}</span>
-                      <button type="button" className="menu-card__add" onClick={() => addToCart(item)} aria-label={`Add ${item.name}`}><Icon name="plus" /></button>
+                      <button type="button" className="menu-card__add" onClick={() => addToCart(item)} aria-label={`Add ${item.name} to order`}><Icon name="plus" /><span>Add</span></button>
                     </div>
                   </div>
                 </article>

@@ -569,6 +569,70 @@ button.tag { border: none; transition: var(--transition-color); }
 .pos-menu { display: flex; flex-direction: column; gap: var(--space-6); }
 .pos-filters { display: flex; flex-direction: column; gap: var(--space-4); }
 
+.menu-welcome {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-8);
+  overflow: hidden;
+  padding: var(--space-8);
+  color: var(--ink-inverse);
+  background: var(--surface-inverse);
+  border-radius: var(--radius-card);
+}
+.menu-welcome::after {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -82px;
+  bottom: -132px;
+  border: 1px solid rgba(245, 239, 228, 0.18);
+  border-radius: 50%;
+  box-shadow: 0 0 0 28px rgba(245, 239, 228, 0.04), 0 0 0 56px rgba(245, 239, 228, 0.03);
+}
+.menu-welcome__copy { position: relative; z-index: 1; max-width: 560px; }
+.menu-welcome__kicker,
+.page-eyebrow {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-xs);
+  line-height: var(--leading-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+.page-eyebrow { color: var(--accent); }
+.menu-welcome__kicker { color: rgba(245, 239, 228, 0.7); }
+.menu-welcome h3 {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.menu-welcome p { max-width: 54ch; color: rgba(245, 239, 228, 0.76); }
+.menu-welcome__facts {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-self: flex-end;
+  gap: var(--space-6);
+  flex-shrink: 0;
+}
+.menu-welcome__facts div { min-width: 82px; }
+.menu-welcome__facts dt {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+.menu-welcome__facts dd {
+  margin-top: var(--space-1);
+  color: rgba(245, 239, 228, 0.62);
+  font-size: var(--text-xs);
+}
+
 .pos-search-wrap { position: relative; display: flex; align-items: center; }
 .pos-search-wrap svg {
   position: absolute;
@@ -627,7 +691,7 @@ button.tag { border: none; transition: var(--transition-color); }
    The photography is the design. Give it room. */
 .menu-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: var(--space-6);
 }
 .menu-card {
@@ -664,18 +728,32 @@ button.tag { border: none; transition: var(--transition-color); }
   color: var(--ink-tertiary);
 }
 .menu-card__body {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--pad-card);
 }
-.menu-card__cat {
+.menu-card__category,
+.menu-card__featured {
+  position: absolute;
+  top: var(--space-3);
+  padding: 6px 10px;
+  border-radius: var(--radius-pill);
+  backdrop-filter: blur(8px);
   font-size: var(--text-xs);
   line-height: var(--leading-xs);
   font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--ink-tertiary);
+}
+.menu-card__category {
+  left: var(--space-3);
+  color: var(--ink-inverse);
+  background: rgba(31, 42, 38, 0.78);
+}
+.menu-card__featured {
+  right: var(--space-3);
+  color: var(--surface-inverse);
+  background: rgba(253, 250, 243, 0.9);
 }
 .menu-card__body h4 {
   font-family: var(--font-display);
@@ -684,12 +762,37 @@ button.tag { border: none; transition: var(--transition-color); }
   font-weight: var(--weight-semibold);
   color: var(--ink-primary);
 }
+.menu-card__description {
+  display: -webkit-box;
+  min-height: calc(var(--text-sm) * var(--leading-sm) * 2);
+  overflow: hidden;
+  color: var(--ink-secondary);
+  font-size: var(--text-sm);
+  line-height: var(--leading-sm);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.menu-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--ink-tertiary);
+  font-size: var(--text-xs);
+}
+.menu-card__spice {
+  padding: 2px var(--space-2);
+  color: var(--warning);
+  background: var(--warning-subtle);
+  border-radius: var(--radius-pill);
+}
 .menu-card__footer {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: var(--space-3);
-  margin-top: var(--space-1);
+  margin-top: auto;
+  padding-top: var(--space-2);
 }
 .menu-card__price {
   font-family: var(--font-display);
@@ -1125,12 +1228,15 @@ button.tag { border: none; transition: var(--transition-color); }
   .card { overflow-x: auto; overscroll-behavior-inline: contain; }
   .orders-table { min-width: 720px; }
 }
-@media (max-width: 560px) {
-  .menu-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
-  .table-scroll { overflow-x: auto; }
+@media (max-width: 720px) {
+  .menu-welcome { flex-direction: column; padding: var(--space-6); }
+  .menu-welcome__facts { align-self: flex-start; }
 }
-@media (max-width: 380px) {
-  .menu-cards { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 560px) {
+  .menu-cards { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+  .menu-welcome__facts { gap: var(--space-4); }
+  .menu-card__body { padding: var(--space-5); }
+  .table-scroll { overflow-x: auto; }
 }
 
 /* Customer shell on mobile: the icon-only side rail makes no sense for a
@@ -1204,20 +1310,24 @@ button.tag { border: none; transition: var(--transition-color); }
   color: inherit;
 }
 .menu-card__image-button { overflow: hidden; }
+.menu-card__image-button { position: relative; }
 .menu-card__image-button img { display: block; transition: transform var(--dur-transform) var(--ease-out); }
 .menu-card:hover .menu-card__image-button img { transform: scale(1.02); }
-.menu-card__meta { font-size: var(--text-xs); color: var(--ink-tertiary); }
 .menu-card__add {
-  display: inline-grid;
-  place-items: center;
-  width: var(--space-8);
-  height: var(--space-8);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 var(--space-3);
   border: 1px solid var(--line-default);
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--accent);
   transition: var(--transition-color);
 }
+.menu-card__add svg { width: 16px; height: 16px; }
+.menu-card__add span { font-size: var(--text-xs); font-weight: var(--weight-semibold); }
 .menu-card__add:hover { background: var(--accent); border-color: var(--accent); color: var(--ink-inverse); }
 
 .session-note { color: var(--success); font-size: var(--text-xs); }
