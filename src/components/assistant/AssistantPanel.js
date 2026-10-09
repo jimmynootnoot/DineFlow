@@ -5,7 +5,14 @@ import { askAssistant, loadConversation, exportConversation } from '../../servic
 import { downloadText } from '../../services/platformService';
 import { createEscalation } from '../../services/escalationService';
 
-const STARTERS = ['What can I get under ₱100?', 'Which dishes contain allergens?', 'What is my order status?'];
+const STARTERS = ['What combos do you recommend?', 'What can I get under ₱100?', 'Which dishes contain allergens?', 'What is my order status?'];
+const MODE_LABELS = {
+  rag: 'AI · vector RAG',
+  'text-retrieval': 'AI · approved text retrieval',
+  'menu-retrieval': 'AI · live menu',
+  'trend-recommendation': 'Apriori · order trends',
+  'menu-recommendation': 'Current menu · pairing ideas',
+};
 
 export default function AssistantPanel({ user }) {
   const [open, setOpen] = useState(false);
@@ -80,7 +87,7 @@ export default function AssistantPanel({ user }) {
             {messages.map((message, index) => (
               <div key={index} className={`assistant__message assistant__message--${message.role}`}>
                 <p>{message.text}</p>
-                {message.mode && <span>{message.mode === 'rag' ? 'AI · vector RAG' : message.mode === 'text-retrieval' ? 'AI · approved text retrieval' : message.mode}{message.saved===false?' · not saved':''}</span>}
+                {message.mode && <span>{MODE_LABELS[message.mode] || message.mode}{message.saved===false?' · not saved':''}</span>}
               </div>
             ))}
             {loading && <div className="assistant__message assistant__message--assistant"><p>Checking the approved menu…</p></div>}

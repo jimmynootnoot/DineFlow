@@ -1,5 +1,7 @@
 import { authenticate, endpoint, embed, generateText, httpError, readAll } from '../serverlib/platform.mjs';
-import { needsStaff, lexicalKnowledge, ASSISTANT_INSTRUCTIONS, STAFF_ANSWER, UNSUPPORTED_ANSWER } from '../serverlib/assistant.mjs';
+import { needsStaff, lexicalKnowledge, isComboQuestion, menuKnowledgeForQuestion, menuPairingFallback, trendRecommendationAnswer, ASSISTANT_INSTRUCTIONS, STAFF_ANSWER, UNSUPPORTED_ANSWER } from '../serverlib/assistant.mjs';
+
+const MENU_FIELDS = 'id,name,description,price,category,serving_size,prep_minutes,spice_level,ingredients,allergens,available,stock,featured';
 
 export function createAssistantHandler({authenticateUser=authenticate,embedQuery=embed,generate=generateText}={}) {
 return endpoint(async request => {
@@ -24,7 +26,22 @@ return endpoint(async request => {
     const { data, error } = await db.from('orders').select('order_number,status,order_type,table_number').eq('customer_id',user.id).order('created_at',{ascending:false}).limit(1);
     if (error) throw error;
     answer = data.length ? `${data[0].order_number} is ${data[0].status}.${data[0].table_number ? ` Table ${data[0].table_number}.` : ''}` : 'You do not have a recorded order yet.';
+  } else if (isComboQuestion(question)) {
+    const { data: rules, error: ruleError } = await db.from('recommendation_rules').select('id,antecedent_name,consequent_name,support,confidence,lift,source,run_id').not('run_id','is',null).gt('lift',1).order('lift',{ascending:false}).limit(3);
+    if (ruleError) throw ruleError;
+    answer = trendRecommendationAnswer(rules);
+    if (answer) {
+      mode = 'trend-recommendation';
+      knowledge = rules.map(rule => ({ id:rule.id,content:`${rule.antecedent_name} pairs with ${rule.consequent_name}.`,metadata:{type:'apriori_rule',source:rule.source} }));
+    } else {
+      const menu = await readAll(() => db.from('menu_items').select(MENU_FIELDS).eq('available',true).gt('stock',0).order('name'));
+      answer = menuPairingFallback(menu);
+      mode = 'menu-recommendation';
+      knowledge = menuKnowledgeForQuestion(question,menu);
+    }
   } else {
+    const menu = await readAll(() => db.from('menu_items').select(MENU_FIELDS).eq('available',true).gt('stock',0).order('name'));
+    const liveMenu = menuKnowledgeForQuestion(question,menu);
     try {
       const embedding = await embedQuery(question);
       const { data, error } = await db.rpc('match_restaurant_knowledge',{ query_embedding:embedding,match_count:6 });
@@ -35,12 +52,15 @@ return endpoint(async request => {
       // approved facts remain usable before the next scheduled indexing batch.
       const unindexed = await readAll(() => db.from('restaurant_knowledge').select('id,content,metadata').is('embedding',null).order('id'));
       const fresh = lexicalKnowledge(question,unindexed);
-      knowledge = [...fresh,...knowledge.filter(row=>!fresh.some(item=>item.id===row.id))].slice(0,6);
-      if (fresh.length) mode = 'text-retrieval';
+      knowledge = [...liveMenu,...fresh,...knowledge.filter(row=>![...liveMenu,...fresh].some(item=>item.id===row.id))].slice(0,12);
+      if (liveMenu.length) mode = 'menu-retrieval';
+      else if (fresh.length) mode = 'text-retrieval';
     } catch {
       // Explicit degraded mode: approved text retrieval, not a claim of vector RAG.
       const rows = await readAll(() => db.from('restaurant_knowledge').select('id,content,metadata').order('id'));
-      knowledge = lexicalKnowledge(question,rows); mode = 'text-retrieval';
+      const textMatches = lexicalKnowledge(question,rows);
+      knowledge = [...liveMenu,...textMatches.filter(row=>!liveMenu.some(item=>item.id===row.id))].slice(0,12);
+      mode = liveMenu.length ? 'menu-retrieval' : 'text-retrieval';
     }
     if (!knowledge.length) { answer = UNSUPPORTED_ANSWER; mode = 'unsupported'; escalationSuggested = true; }
     else {

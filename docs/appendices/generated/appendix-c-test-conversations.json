@@ -3,16 +3,20 @@
   "transcripts": [
     {
       "question": "What are the Chicken Sisig ingredients?",
-      "answer": "Chicken Sisig costs PHP 95.00. Ingredients: chicken, onion. Spice: mild.",
-      "mode": "text-retrieval",
+      "answer": "Chicken Sisig. Chopped chicken with onion. Price: PHP 95.00. Category: Sizzling Plates. Serving: 1 plate. Preparation: 15 minutes. Spice: mild. Ingredients: chicken, onion. Allergens: none listed. Availability: available.",
+      "mode": "menu-retrieval",
       "sources": [
+        {
+          "id": "menu:menu-1",
+          "title": "menu_item"
+        },
         {
           "id": "menu-1",
           "title": "menu"
         }
       ],
       "escalationSuggested": false,
-      "sessionId": "c55fbc31-246c-4209-8431-50d6a38654af",
+      "sessionId": "00000000-0000-4000-8000-000000000001",
       "saved": true
     },
     {
@@ -21,7 +25,7 @@
       "mode": "unsupported",
       "sources": [],
       "escalationSuggested": true,
-      "sessionId": "08e91bfa-491e-42cc-94f4-cb7839a4628a",
+      "sessionId": "00000000-0000-4000-8000-000000000002",
       "saved": true
     },
     {
@@ -30,7 +34,7 @@
       "mode": "staff-required",
       "sources": [],
       "escalationSuggested": true,
-      "sessionId": "36babbc9-bba8-4685-a485-a5de6da7493e",
+      "sessionId": "00000000-0000-4000-8000-000000000003",
       "saved": true
     }
   ]

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rankRecommendations } from '../serverlib/recommendations.mjs';
 import { aggregateSales,periodBounds } from '../serverlib/sales.mjs';
-import { needsStaff,lexicalKnowledge } from '../serverlib/assistant.mjs';
+import { needsStaff,lexicalKnowledge,isComboQuestion,menuKnowledgeForQuestion,menuPairingFallback,trendRecommendationAnswer } from '../serverlib/assistant.mjs';
 import { validateMayaPayment } from '../serverlib/maya.mjs';
 import { DEMO_PAYMENT, validateDemoPayment } from '../serverlib/demo-payment.mjs';
 const menu=['A','B','C','D'].map(id=>({id,name:id,category:'Mains',available:true,stock:5}));
@@ -54,4 +54,23 @@ test('sensitive requests escalate and unrelated queries retrieve no context',()=
   for(const question of ['Cancel my order','Is it safe for my diabetes?','Give me a senior discount','Offer nutritional advice','Special preparation please'])assert.equal(needsStaff(question),true,question);
   assert.equal(needsStaff('What are Chicken Sisig ingredients?'),false);
   assert.equal(lexicalKnowledge('Who won the football game?',[{content:'Chicken Sisig. Ingredients: chicken, onion.'}]).length,0);
+});
+test('live menu retrieval recognizes dish names and broad menu questions',()=>{
+  const rows=[
+    {id:'bangsilog',name:'Bangsilog',description:'Marinated milkfish with garlic rice and fried egg.',price:125,category:'Silog Meals',serving_size:'1 plate',prep_minutes:15,spice_level:'none',ingredients:['milkfish','garlic rice','egg'],allergens:['fish','egg'],available:true,stock:30},
+    {id:'juice',name:'Calamansi Juice',description:'Fresh calamansi drink.',price:55,category:'Drinks',available:true,stock:30},
+  ];
+  const named=menuKnowledgeForQuestion('What is Bangsilog good for?',rows);
+  assert.equal(named.length,1);assert.match(named[0].content,/Marinated milkfish/);
+  assert.equal(menuKnowledgeForQuestion('What can I get under PHP 100?',rows).length,1);
+});
+test('combo answers distinguish mined trends from menu-based ideas',()=>{
+  assert.equal(isComboQuestion('What combos do you recommend?'),true);
+  assert.match(trendRecommendationAnswer([{antecedent_name:'Bangsilog',consequent_name:'Barako Coffee',lift:1.4,source:'historical'}]),/completed, paid order trends/);
+  assert.match(trendRecommendationAnswer([{antecedent_name:'Bangsilog',consequent_name:'Barako Coffee',lift:1.4,source:'simulated'}]),/not production demand/);
+  const fallback=menuPairingFallback([
+    {name:'Bangsilog',category:'Silog Meals',available:true,stock:3},
+    {name:'Barako Coffee',category:'Drinks',available:true,stock:3},
+  ]);
+  assert.match(fallback,/Bangsilog \+ Barako Coffee/);assert.match(fallback,/not mined sales trends/);
 });
