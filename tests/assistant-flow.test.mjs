@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdir,writeFile } from 'node:fs/promises';
-import { createAssistantHandler } from '../api/assistant.js';
+import { createAssistantHandler } from '../api/assistant.mjs';
 
 test('assistant retrieves approved data, refuses unsupported requests, persists exchanges and requests staff review',async()=>{
   const saved=[];
