@@ -52,6 +52,7 @@
   --line-subtle:       rgba(28, 35, 33, 0.08);
   --line-default:      rgba(28, 35, 33, 0.14);
   --line-strong:       rgba(28, 35, 33, 0.24);
+  --overlay-backdrop:  rgba(28, 35, 33, 0.46);
   /* On inverse surfaces the same lines read from the light side. */
   --line-inverse:      rgba(245, 239, 228, 0.14);
   /* Washes on the inverse surfaces — hover, selected, inset. */

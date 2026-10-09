@@ -14,6 +14,12 @@ npm start
 
 Open `http://127.0.0.1:5173`. Vite serves React **and** the serverless API handlers locally, so the assistant, recommendations and sales summaries work with this one command. Restart after changes to server code or environment variables. `npm run build` produces `dist/`; `npm run preview` previews static assets only. Vercel serves the API functions when deployed.
 
+## Vercel deployment
+
+The browser uses same-origin `/api/*` functions in production; do not point `REACT_APP_API_URL` at localhost. Add `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and either `GROQ_API_KEY` or `OPENAI_API_KEY` to the Vercel **Production** environment, then redeploy. The public Supabase URL/key remain `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_PUBLISHABLE_KEY`.
+
+Disable Vercel Deployment Protection for the production deployment (or attach an unprotected production domain). QR-table guests cannot authenticate through Vercel's project login, and protected `/api/assistant` requests are intentionally reported as unavailable rather than being disguised as local chatbot answers.
+
 The older `server/` Express/Prisma project is legacy and is not used by this Supabase application. React Scripts remains only for the existing Jest test runner; production and development use Vite and Tailwind 4 utilities alongside the established styles.
 
 ## Database activation

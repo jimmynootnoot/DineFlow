@@ -96,6 +96,7 @@ function App() {
   const identityRef = useRef(user?.id);
   const requestGeneration = useRef(0);
   identityRef.current = user?.id;
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // ── Active page ────────────────────────────────────────────
   const defaultPage = (role) => {
@@ -193,6 +194,20 @@ function App() {
   }, [user, signUpModalOpen]);
 
   useEffect(() => {
+    if (!mobileNavOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setMobileNavOpen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [mobileNavOpen]);
+
+  useEffect(() => {
     if (!user || !['Admin','Management'].includes(user.role)) return;
     seedMenuItems().catch(() => {});
   }, [user]);
@@ -226,6 +241,7 @@ function App() {
     setDailyStats(null);
     setBestSellers([]);
     setPeriodComparison(null);
+    setMobileNavOpen(false);
   };
 
   // ── Menu CRUD ──────────────────────────────────────────────
@@ -323,6 +339,12 @@ function App() {
 
   const cartTotal = cart.reduce((s, c) => s + c.price * c.quantity, 0);
   const cartCount = cart.reduce((s, c) => s + c.quantity, 0);
+  const scrollToOrder = () => {
+    const orderDetails = document.getElementById('order-details');
+    if (!orderDetails) return;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    orderDetails.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
@@ -454,6 +476,7 @@ function App() {
   const navItems = NAV[user.role] || NAV.Customer;
   const roleInitial = (user.name || 'U')[0].toUpperCase();
   const canManageMenu = ['Admin', 'Management'].includes(user.role);
+  const activeNavLabel = navItems.find((item) => item.id === activePage)?.label || 'DineFlow';
 
   // ── Page renderers ───────────────────────────────────────────
 
@@ -573,9 +596,9 @@ function App() {
           <p className="page-sub">{user.role === 'Customer' ? 'Filipino comfort food, cooked with familiar flavors and served with care.' : 'Browse the dining menu and create a customer order.'}</p>
         </div>
         {cartCount > 0 && (
-          <div className="cart-pill">
+          <button type="button" className="cart-pill" onClick={scrollToOrder}>
             <Icon name="bag" /> <strong>{cartCount}</strong> item{cartCount !== 1 ? 's' : ''} · <strong>{currency(cartTotal)}</strong>
-          </div>
+          </button>
         )}
       </div>
 
@@ -690,7 +713,7 @@ function App() {
         </div>
 
         {/* Order side */}
-        <div className="pos-order">
+        <div className="pos-order" id="order-details">
           <div className="card">
             <div className="card-head"><h3 className="card-title">Order Details</h3></div>
             <div className="pos-form">
@@ -1198,17 +1221,33 @@ function App() {
       <DishDetails item={selectedDish} onClose={() => setSelectedDish(null)} onAdd={addToCart} />
       <ReceiptPanel order={orders.find(order=>order.id===receiptOrder?.id)||receiptOrder} onClose={() => setReceiptOrder(null)} />
 
+      {user.role !== 'Customer' && (
+        <header className="mobile-topbar">
+          <button type="button" className="mobile-topbar__menu" onClick={() => setMobileNavOpen(true)} aria-expanded={mobileNavOpen} aria-controls="primary-navigation">
+            <Icon name="list" size={20} />
+            <span className="sr-only">Open navigation</span>
+          </button>
+          <strong>{activeNavLabel}</strong>
+          <span className="mobile-topbar__brand">DineFlow</span>
+        </header>
+      )}
+
+      {mobileNavOpen && user.role !== 'Customer' && (
+        <button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className={`sidebar ${user.role === 'Customer' ? 'sidebar--customer' : ''}`}>
+      <aside id="primary-navigation" className={`sidebar ${user.role === 'Customer' ? 'sidebar--customer' : 'sidebar--staff'} ${mobileNavOpen ? 'sidebar--mobile-open' : ''}`}>
         <div className="sidebar__brand">
           <div className="sidebar__logo"><Icon name="utensils" size={20} /></div>
           <span className="sidebar__name">DineFlow</span>
+          {user.role !== 'Customer' && <button type="button" className="sidebar__mobile-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><Icon name="x" /></button>}
         </div>
 
         <nav className="sidebar__nav">
           <p className="sidebar__section">Main</p>
           {navItems.filter(n => ['dashboard','pos','orders'].includes(n.id)).map(n => (
-            <button key={n.id} className={`nav-item ${activePage === n.id ? 'nav-item--active' : ''}`} onClick={() => setActivePage(n.id)}>
+            <button key={n.id} className={`nav-item ${activePage === n.id ? 'nav-item--active' : ''}`} onClick={() => { setActivePage(n.id); setMobileNavOpen(false); }}>
               <span className="nav-item__icon"><Icon name={n.icon} /></span>
               <span>{n.label}</span>
             </button>
@@ -1218,7 +1257,7 @@ function App() {
             <p className="sidebar__section">Management</p>
           )}
           {navItems.filter(n => ['menu','kitchen','myorders','reports','requests','tables','settings'].includes(n.id)).map(n => (
-            <button key={n.id} className={`nav-item ${activePage === n.id ? 'nav-item--active' : ''}`} onClick={() => setActivePage(n.id)}>
+            <button key={n.id} className={`nav-item ${activePage === n.id ? 'nav-item--active' : ''}`} onClick={() => { setActivePage(n.id); setMobileNavOpen(false); }}>
               <span className="nav-item__icon"><Icon name={n.icon} /></span>
               <span>{n.label}</span>
             </button>
@@ -1239,7 +1278,13 @@ function App() {
       <main className={`main-area ${user.role === 'Customer' ? 'main-area--customer' : ''}`}>
         {renderPage()}
       </main>
-      {user.role !== 'Kitchen' && <AssistantPanel key={user.id} menu={menu} orders={orders.filter(order=>order.customerId===user.id)} user={user} />}
+      {user.role === 'Customer' && cartCount > 0 && (
+        <button type="button" className="mobile-cart-bar" onClick={scrollToOrder}>
+          <span><Icon name="bag" /> Review order</span>
+          <strong>{cartCount} item{cartCount !== 1 ? 's' : ''} · {currency(cartTotal)}</strong>
+        </button>
+      )}
+      {user.role !== 'Kitchen' && <AssistantPanel key={user.id} user={user} />}
     </div>
   );
 }

@@ -6,6 +6,7 @@
 .lp-root {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
   padding: var(--space-6);
@@ -35,16 +36,7 @@
 .lp-orb--7 { width: 360px; height: 360px; bottom: -120px; right: -100px; }
 
 .lp-grid {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right,  var(--line-subtle) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line-subtle) 1px, transparent 1px);
-  background-size: 64px 64px;
-  opacity: 0.5;
-  -webkit-mask-image: radial-gradient(ellipse at center, rgba(28,35,33,0.5), transparent 75%);
-  mask-image: radial-gradient(ellipse at center, rgba(28,35,33,0.5), transparent 75%);
+  display: none;
 }
 
 /* ── Card ─────────────────────────────────────────────────────

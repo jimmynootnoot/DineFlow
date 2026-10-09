@@ -7,10 +7,10 @@ import { createEscalation } from '../../services/escalationService';
 
 const STARTERS = ['What can I get under ₱100?', 'Which dishes contain allergens?', 'What is my order status?'];
 
-export default function AssistantPanel({ menu, orders, user }) {
+export default function AssistantPanel({ user }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState([{ role: 'assistant', text: 'Ask me about the menu, ingredients, budget, portions, availability, or your order status.', mode: 'approved menu' }]);
+  const [messages, setMessages] = useState([{ role: 'assistant', text: 'Ask me about the menu, ingredients, budget, portions, availability, or your order status.', mode: 'online assistant' }]);
   const [loading, setLoading] = useState(false);
   const [sessionId,setSessionId] = useState(null);
   const [historyLoading,setHistoryLoading] = useState(true);
@@ -36,11 +36,22 @@ export default function AssistantPanel({ menu, orders, user }) {
     setMessages((previous) => [...previous, { role: 'user', text: clean, saved:false }]);
     setQuestion('');
     setLoading(true);
-    const result = await askAssistant({ question: clean, menu, orders, sessionId });
-    setSessionId(result.sessionId);
-    setMessages((previous) => [...previous.slice(0,-1), {...previous[previous.length-1],saved:result.saved}, { role: 'assistant', text: result.answer, mode: result.mode, sources:result.sources, saved:result.saved }]);
-    setHistoryNotice(result.saved?'':'This exchange was not saved to the database. It is included as unsaved in the transcript export.');
-    setLoading(false);
+    try {
+      const result = await askAssistant({ question: clean, sessionId });
+      setSessionId(result.sessionId);
+      setMessages((previous) => [...previous.slice(0,-1), {...previous[previous.length-1],saved:result.saved}, { role: 'assistant', text: result.answer, mode: result.mode, sources:result.sources, saved:result.saved }]);
+      setHistoryNotice(result.saved?'':'This exchange was not saved to the database. It is included as unsaved in the transcript export.');
+    } catch (error) {
+      setMessages((previous) => [...previous.slice(0,-1), {...previous[previous.length-1],saved:false}, {
+        role: 'assistant',
+        text: error.message || 'The online assistant is unavailable. Please try again or ask staff for help.',
+        mode: 'online service unavailable',
+        saved: false,
+      }]);
+      setHistoryNotice('This exchange was not saved because the online assistant could not be reached.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const escalate = async () => {
@@ -60,7 +71,7 @@ export default function AssistantPanel({ menu, orders, user }) {
       {open && (
         <section className="assistant__panel" aria-label="DineFlow menu assistant">
           <header className="assistant__head">
-            <div><span className="assistant__eyebrow">Grounded assistant</span><h2>DineFlow Guide</h2></div>
+            <div><h2>DineFlow Guide</h2><span className="assistant__status">Online restaurant assistant</span></div>
             <button className="assistant__close" onClick={() => setOpen(false)} aria-label="Close assistant"><Icon name="x" /></button>
           </header>
           <div className="assistant__starters"><button disabled={loading||historyLoading||escalating} onClick={()=>{setSessionId(null);setMessages([{role:'assistant',text:'New conversation. Ask about the approved menu.'}]);setHistoryNotice('');}}>New conversation</button><button onClick={exportTranscript}>Export transcript</button></div>
