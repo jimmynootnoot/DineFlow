@@ -569,6 +569,33 @@ button.tag { border: none; transition: var(--transition-color); }
 .pos-menu { display: flex; flex-direction: column; gap: var(--space-6); }
 .pos-filters { display: flex; flex-direction: column; gap: var(--space-4); }
 
+.table-session-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  color: var(--ink-primary);
+  background: var(--success-subtle);
+  border: 1px solid var(--line-subtle);
+  border-radius: var(--radius-card);
+}
+.table-session-banner--invalid { background: var(--danger-subtle); color: var(--danger); }
+.table-session-banner--resolving { background: var(--surface-sunken); color: var(--ink-secondary); }
+.table-session-banner__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-raised);
+}
+.table-session-banner strong,
+.table-session-banner span { display: block; }
+.table-session-banner div > span { margin-top: var(--space-1); color: var(--ink-secondary); font-size: var(--text-sm); }
+.table-session-banner--invalid div > span { color: currentColor; }
+
 .menu-welcome {
   position: relative;
   display: flex;

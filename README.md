@@ -43,6 +43,8 @@ The linked project was checked read-only during implementation. It had zero inde
 
 Self-signup always creates a customer. Bootstrap the first administrator through Supabase, then use **Administration** to assign roles to existing accounts. User metadata does not grant privileges. RLS and validated functions enforce permissions independently of the UI.
 
+For account-free table ordering, enable **Allow anonymous sign-ins** in **Supabase Dashboard → Authentication → Providers → Anonymous Sign-Ins**. No SQL migration is required for this switch. Anonymous diners still receive an authenticated Supabase session, and the server validates the active table token before accepting a dine-in order.
+
 Staff create tables under **Tables & QR**, print the scannable codes, and customers use those links for dine-in sessions. Occupancy is derived from active bills. Staff mark ready orders served; served bills complete after payment. Customers may pay before preparation, but only authorized staff mark them served/completed. Discounts apply only to an unpaid active bill and require staff to verify the eligible share. Administration configures VAT registration; the calculation removes included VAT from the eligible portion when applicable, then applies the senior/PWD discount. The bill and payment ledger retain the discount, tendered amount and change.
 
 ## Appendix A: actual Apriori mining

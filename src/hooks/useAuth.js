@@ -73,6 +73,7 @@ async function getSessionUser(authUser) {
       authUser.email?.split('@')[0] ||
       'User',
     role: normalizeRole(profile?.role),
+    isGuest: Boolean(authUser.is_anonymous),
   };
 }
 
@@ -82,6 +83,9 @@ function friendlyAuthError(error) {
   }
   if (error?.message?.toLowerCase().includes('email not confirmed')) {
     return 'Confirm your email address before signing in.';
+  }
+  if (error?.message?.toLowerCase().includes('anonymous sign-ins are disabled')) {
+    return 'Guest ordering is not enabled yet. Please sign in, or ask staff for assistance.';
   }
   return error?.message || 'Authentication failed. Check your connection and try again.';
 }
@@ -213,6 +217,34 @@ export const useAuth = () => {
     }
   };
 
+  const handleGuestAccess = async () => {
+    setError(null);
+    setNotice(null);
+
+    if (supabaseConfigError) {
+      setError(supabaseConfigError);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const { data, error: signInError } = await supabase.auth.signInAnonymously({
+        options: { data: { full_name: 'Guest' } },
+      });
+
+      if (signInError) throw signInError;
+      if (!data.user) throw new Error('The guest session could not be created.');
+
+      setUser(await getSessionUser(data.user));
+      setLoginForm(defaultLoginForm);
+    } catch (authError) {
+      console.error('Supabase guest auth error', authError);
+      setError(friendlyAuthError(authError));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleLogout = async () => {
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
@@ -240,6 +272,7 @@ export const useAuth = () => {
     handleLogout,
     handleLoginChange,
     handleAuthSubmit,
+    handleGuestAccess,
     authLoading: loading,
   };
 };

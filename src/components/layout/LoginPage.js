@@ -16,6 +16,8 @@ export default function LoginPage({
   authLoading,
   onLoginChange,
   onSubmit,
+  onGuestAccess,
+  tableSessionToken,
   onOpenSignup,
   signUpModalOpen,
   onCloseSignup,
@@ -25,6 +27,8 @@ export default function LoginPage({
   const animRef = useRef(null);
   const orbsRef = useRef([]);
   const [typed, setTyped] = useState({ email: false, password: false });
+  const hasTableSession = Boolean(tableSessionToken);
+  const [showAccountLogin, setShowAccountLogin] = useState(!hasTableSession);
 
   // ── Mouse parallax ──────────────────────────────────────────
   const handleMouseMove = useCallback((e) => {
@@ -84,11 +88,40 @@ export default function LoginPage({
           <div className="lp-card__glow" />
 
           <header className="lp-card__header">
-            <p className="lp-card__eyebrow">DineFlow OS</p>
-            <h1 className="lp-card__title">Welcome Back</h1>
-            <p className="lp-card__sub">Sign in to your account to continue</p>
+            {!hasTableSession && <p className="lp-card__eyebrow">DineFlow OS</p>}
+            <h1 className="lp-card__title">
+              {hasTableSession && !showAccountLogin ? 'Ready to order?' : 'Welcome Back'}
+            </h1>
+            <p className="lp-card__sub">
+              {hasTableSession && !showAccountLogin
+                ? 'Continue without an account. We will verify this table before showing the menu.'
+                : 'Sign in to your account to continue'}
+            </p>
           </header>
 
+          {hasTableSession && !showAccountLogin ? (
+            <div className="lp-form lp-guest-entry">
+              <div className="lp-scan-summary">
+                <span className="lp-scan-summary__icon"><Icon name="check" size={18} /></span>
+                <div>
+                  <strong>Table QR detected</strong>
+                  <span>No email or password needed</span>
+                </div>
+              </div>
+
+              {loginError && <p className="lp-error" role="alert">{loginError}</p>}
+
+              <button type="button" className="lp-submit" disabled={authLoading} onClick={onGuestAccess}>
+                {authLoading
+                  ? <span className="lp-spinner" />
+                  : <>Continue as guest <Icon name="arrowRight" /></>}
+              </button>
+
+              <button type="button" className="lp-ghost" onClick={() => setShowAccountLogin(true)}>
+                Sign in instead
+              </button>
+            </div>
+          ) : (
           <form
             className="lp-form"
             onSubmit={(e) => onSubmit(e, 'login')}
@@ -136,10 +169,18 @@ export default function LoginPage({
                 : <>Sign in <Icon name="arrowRight" /></>}
             </button>
 
-            <button type="button" className="lp-ghost" onClick={onOpenSignup}>
-              New customer? Create account
-            </button>
+            <div className="lp-secondary-actions">
+              {hasTableSession && (
+                <button type="button" className="lp-ghost" onClick={() => setShowAccountLogin(false)}>
+                  Continue as guest
+                </button>
+              )}
+              <button type="button" className="lp-ghost" onClick={onOpenSignup}>
+                New customer? Create account
+              </button>
+            </div>
           </form>
+          )}
         </div>
       </div>
 

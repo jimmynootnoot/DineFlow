@@ -92,7 +92,7 @@ const ticketAge = (ts) => {
 const timingClass = (m) => (m >= 20 ? 'kitchen-card--late' : m >= 10 ? 'kitchen-card--warn' : '');
 
 function App() {
-  const { user, loginForm, loginError, authNotice, handleLogout, handleLoginChange, handleAuthSubmit, authLoading } = useAuth();
+  const { user, loginForm, loginError, authNotice, handleLogout, handleLoginChange, handleAuthSubmit, handleGuestAccess, authLoading } = useAuth();
   const identityRef = useRef(user?.id);
   const requestGeneration = useRef(0);
   identityRef.current = user?.id;
@@ -132,6 +132,7 @@ function App() {
   const [orderCustomer, setOrderCustomer]   = useState('');
   const [tableSessionToken] = useState(() => new URLSearchParams(window.location.search).get('tableSession'));
   const [tableSessionError, setTableSessionError] = useState('');
+  const [tableSessionStatus, setTableSessionStatus] = useState(() => tableSessionToken ? 'resolving' : 'idle');
   const [orderType, setOrderType]           = useState(() => new URLSearchParams(window.location.search).has('tableSession') ? 'dine-in' : 'takeout');
   const [orderTable, setOrderTable]         = useState('');
   const [orderNotes, setOrderNotes]         = useState('');
@@ -160,7 +161,7 @@ function App() {
   }, [user?.role]);
 
   useEffect(() => {
-    if (user?.role === 'Customer' && user.name) setOrderCustomer(user.name);
+    if (user?.role === 'Customer' && !user.isGuest && user.name) setOrderCustomer(user.name);
   }, [user]);
   useEffect(()=>{
     let active=true;setHostedMayaEnabled(false);
@@ -171,10 +172,18 @@ function App() {
   useEffect(() => {
     if (!user || !tableSessionToken) return;
     let active = true;
+    setTableSessionStatus('resolving');
     supabase.rpc('resolve_table_session', {p_token:tableSessionToken}).then(({data,error}) => {
       if (!active) return;
-      if (error || !data?.length) setTableSessionError('This table QR session is unavailable. Ask staff for a current code or choose takeout.');
-      else { setOrderTable(data[0].table_number); setTableSessionError(''); }
+      if (error || !data?.length) {
+        setOrderTable('');
+        setTableSessionStatus('invalid');
+        setTableSessionError('This table QR session is unavailable. Ask staff for a current code or choose takeout.');
+      } else {
+        setOrderTable(data[0].table_number);
+        setTableSessionStatus('verified');
+        setTableSessionError('');
+      }
     });
     return () => {active=false;};
   }, [user, tableSessionToken]);
@@ -433,6 +442,8 @@ function App() {
         authLoading={authLoading}
         onLoginChange={handleLoginChange}
         onSubmit={handleAuthSubmit}
+        onGuestAccess={handleGuestAccess}
+        tableSessionToken={tableSessionToken}
         onOpenSignup={() => setSignUpModalOpen(true)}
         signUpModalOpen={signUpModalOpen}
         onCloseSignup={() => setSignUpModalOpen(false)}
@@ -568,6 +579,32 @@ function App() {
         )}
       </div>
 
+      {user.role === 'Customer' && tableSessionToken && (
+        <div className={`table-session-banner table-session-banner--${tableSessionStatus}`} role="status">
+          <span className="table-session-banner__icon">
+            <Icon name={tableSessionStatus === 'invalid' ? 'alert' : 'check'} size={18} />
+          </span>
+          <div>
+            <strong>
+              {tableSessionStatus === 'verified'
+                ? `Table ${orderTable} confirmed`
+                : tableSessionStatus === 'invalid'
+                  ? 'Table QR unavailable'
+                  : 'Checking your table'}
+            </strong>
+            <span>
+              {tableSessionStatus === 'verified'
+                ? user.isGuest
+                  ? 'Enter your name in Order Details, then choose your dishes.'
+                  : 'Your dine-in order will be sent to this table.'
+                : tableSessionStatus === 'invalid'
+                  ? tableSessionError
+                  : 'Please wait while we securely verify the code.'}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="pos-layout">
         {/* Menu side */}
         <div className="pos-menu">
@@ -659,8 +696,8 @@ function App() {
             <div className="pos-form">
               <div className="pos-field">
                 <label className="pos-label" htmlFor="pos-customer">Customer name</label>
-                <input id="pos-customer" className="pos-input" placeholder="Enter customer name" value={orderCustomer}
-                  readOnly={user.role === 'Customer'} onChange={e => setOrderCustomer(e.target.value)} />
+                <input id="pos-customer" className="pos-input" placeholder={user.isGuest ? 'Enter your name' : 'Enter customer name'} value={orderCustomer}
+                  readOnly={user.role === 'Customer' && !user.isGuest} onChange={e => setOrderCustomer(e.target.value)} />
               </div>
               <div className="pos-field">
                 <label className="pos-label" htmlFor="pos-type">Order type</label>
@@ -1192,9 +1229,9 @@ function App() {
           <div className="sidebar__avatar">{roleInitial}</div>
           <div className="sidebar__user-info">
             <span className="sidebar__user-name">{user.name}</span>
-            <span className={`sidebar__role-badge role--${(user.role || '').toLowerCase()}`}>{user.role}</span>
+            <span className={`sidebar__role-badge role--${(user.role || '').toLowerCase()}`}>{user.isGuest ? 'Guest ordering' : user.role}</span>
           </div>
-          <button className="sidebar__logout" title="Sign out" aria-label="Sign out" onClick={handleSecureLogout}><Icon name="logout" /></button>
+          <button className="sidebar__logout" title={user.isGuest ? 'End guest session' : 'Sign out'} aria-label={user.isGuest ? 'End guest session' : 'Sign out'} onClick={handleSecureLogout}><Icon name="logout" /></button>
         </div>
       </aside>
 
