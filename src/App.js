@@ -24,6 +24,7 @@ import { supabase } from './services/supabase';
 import HostedMaya from './components/checkout/HostedMaya';
 import { serverRequest } from './services/platformService';
 import { getMenuImage, getMenuImageFallback } from './utils/menuPresentation';
+import { matchesOrderSearch } from './utils/orderSearch';
 
 const currency  = (v) => `₱${Number(v || 0).toFixed(2)}`;
 const safeStatus = (s) => (s || 'pending').toLowerCase().replace('_', '-');
@@ -144,6 +145,8 @@ function App() {
 
   // Orders panel
   const [filterStatus, setFilterStatus]     = useState('all');
+  const [orderSearch, setOrderSearch]       = useState('');
+  const [kitchenSearch, setKitchenSearch]   = useState('');
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [selectedOrder, setSelectedOrder]   = useState(null);
 
@@ -215,6 +218,8 @@ function App() {
     handleLogout();
     setCart([]);
     setFilterStatus('all');
+    setOrderSearch('');
+    setKitchenSearch('');
     setMayaOpen(false);
     setPendingOrderId(null);
     setPendingOrderTotal(0);
@@ -436,17 +441,17 @@ function App() {
   const kitchenQueue = useMemo(() =>
     orders.filter(o => ['confirmed','preparing','ready'].includes(o.status)),
     [orders]);
+  const visibleKitchenQueue = useMemo(() => kitchenQueue.filter(order => matchesOrderSearch(order, kitchenSearch)), [kitchenQueue, kitchenSearch]);
 
-  const filteredOrders = useMemo(() => {
-    if (filterStatus === 'all') return orders;
-    return orders.filter(o => o.status === filterStatus);
-  }, [orders, filterStatus]);
+  const searchedOrders = useMemo(() => orders.filter(order => matchesOrderSearch(order, orderSearch)), [orders, orderSearch]);
+  const filteredOrders = useMemo(() => filterStatus === 'all'
+    ? searchedOrders : searchedOrders.filter(order => order.status === filterStatus), [searchedOrders, filterStatus]);
 
   const statusCounts = useMemo(() => {
-    const c = { all: orders.length };
-    ORDER_STATUSES.forEach(s => { c[s] = orders.filter(o => o.status === s).length; });
+    const c = { all: searchedOrders.length };
+    ORDER_STATUSES.forEach(s => { c[s] = searchedOrders.filter(o => o.status === s).length; });
     return c;
-  }, [orders]);
+  }, [searchedOrders]);
 
   // ── Login screen ────────────────────────────────────────────
   if (!user) {
@@ -762,6 +767,14 @@ function App() {
       </div>
 
       <div className="card">
+        <div className="order-search-toolbar">
+          <div className="pos-search-wrap">
+            <Icon name="search" size={18} />
+            <input className="pos-search" type="search" aria-label="Search orders" placeholder="Order number, customer, table, dish, or notes" value={orderSearch} maxLength={120} onChange={event => setOrderSearch(event.target.value)} />
+          </div>
+          {orderSearch && <button type="button" className="hero-btn hero-btn--outline" onClick={() => setOrderSearch('')}>Clear search</button>}
+          <span className="order-search-count" role="status">{filteredOrders.length} of {orders.length} orders</span>
+        </div>
         <div className="status-tabs">
           {['all', ...ORDER_STATUSES].map(s => (
             <button key={s} className={`status-tab ${filterStatus === s ? 'active' : ''}`} onClick={() => setFilterStatus(s)}>
@@ -777,7 +790,7 @@ function App() {
           </thead>
           <tbody>
             {filteredOrders.length === 0
-              ? <tr><td colSpan={7} className="table-empty">No orders in this state.</td></tr>
+              ? <tr><td colSpan={7} className="table-empty">{orderSearch ? 'No orders match your search. Try another order number, customer, table, or dish.' : orders.length ? 'No orders in this state.' : 'No orders yet.'}</td></tr>
               : filteredOrders.map(order => (
                   <tr key={order.id} className={selectedOrder?.id === order.id ? 'row-selected' : ''} onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}>
                     <td className="order-num">{order.orderNumber || `#${order.id.slice(-6).toUpperCase()}`}</td>
@@ -801,7 +814,7 @@ function App() {
           </tbody>
         </table>
 
-        {selectedOrder && (
+        {selectedOrder && filteredOrders.some(order => order.id === selectedOrder.id) && (
           <div className="order-detail">
             <h4>Items in {selectedOrder.orderNumber}</h4>
             <ul className="detail-items">
@@ -1004,11 +1017,20 @@ function App() {
           </div>
         </div>
 
-        {kitchenQueue.length === 0
-          ? <div className="kitchen-empty">Kitchen is caught up.</div>
+        <div className="order-search-toolbar kitchen-search-toolbar">
+          <div className="pos-search-wrap">
+            <Icon name="search" size={18} />
+            <input className="pos-search" type="search" aria-label="Search kitchen tickets" placeholder="Order number, customer, table, dish, or notes" value={kitchenSearch} maxLength={120} onChange={event => setKitchenSearch(event.target.value)} />
+          </div>
+          {kitchenSearch && <button type="button" className="kbtn" onClick={() => setKitchenSearch('')}>Clear search</button>}
+          <span className="order-search-count" role="status">{visibleKitchenQueue.length} of {kitchenQueue.length} active tickets</span>
+        </div>
+
+        {visibleKitchenQueue.length === 0
+          ? <div className="kitchen-empty">{kitchenQueue.length ? 'No tickets match your search. Try another order number, customer, table, or dish.' : 'Kitchen is caught up.'}</div>
           : (
             <div className="kitchen-grid">
-              {kitchenQueue.map(order => {
+              {visibleKitchenQueue.map(order => {
                 const mins = ticketAge(order.createdAt);
                 return (
                   <div key={order.id} className={`kitchen-card ${timingClass(mins)}`}>

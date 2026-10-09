@@ -535,6 +535,17 @@ button.tag { border: none; transition: var(--transition-color); }
 }
 
 /* ─── Status tabs ───────────────────────────────────────────────*/
+.order-search-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.order-search-toolbar .pos-search-wrap { flex: 1 1 340px; min-width: min(100%, 240px); }
+.order-search-toolbar .pos-search { min-height: 44px; font-size: max(1rem, var(--text-base)); }
+.order-search-toolbar .hero-btn, .order-search-toolbar .kbtn { min-height: 44px; }
+.order-search-count { margin-inline-start: auto; color: var(--ink-secondary); font-size: var(--text-sm); white-space: nowrap; }
 .status-tabs {
   display: flex;
   gap: var(--space-6);
@@ -1297,6 +1308,9 @@ button.tag { border: none; transition: var(--transition-color); }
 }
 .kitchen-shell .page-title { color: var(--kitchen-ink); }
 .kitchen-shell .page-sub { color: var(--kitchen-ink-dim); }
+.kitchen-shell .page-hero { margin-bottom: var(--space-6); }
+.kitchen-search-toolbar .pos-search { background: var(--kitchen-raised); border-color: var(--kitchen-line); color: var(--kitchen-ink); color-scheme: dark; }
+.kitchen-search-toolbar .pos-search::placeholder, .kitchen-search-toolbar .pos-search-wrap svg, .kitchen-search-toolbar .order-search-count { color: var(--kitchen-ink-dim); }
 
 .kitchen-grid {
   display: grid;
