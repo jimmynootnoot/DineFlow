@@ -1,7 +1,7 @@
 import { mkdir,readFile,writeFile,copyFile } from 'node:fs/promises';
 const out='docs/appendices/generated';
 await mkdir(out,{recursive:true});
-const files=['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-03-storage.sql','se2-04-maya.sql'];
+const files=['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-03-storage.sql','se2-04-maya.sql','se2-05-table-order-fk.sql','se2-06-safe-mining-publish.sql'];
 const parts=[];
 for(const file of files){parts.push(`-- SOURCE: supabase/${file}\n${await readFile(`supabase/${file}`,'utf8')}`);await copyFile(`supabase/${file}`,`${out}/${file}`);}
 // The bootstrap group commits the enum extension before its first use.

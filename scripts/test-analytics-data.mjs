@@ -12,7 +12,7 @@ try {
     create schema auth; create table auth.users(id uuid primary key,email text,raw_user_meta_data jsonb default '{}');
     create function auth.uid() returns uuid language sql stable as $$select null::uuid$$;
     create publication supabase_realtime;`);
-  for (const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql']) {
+  for (const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql','se2-06-safe-mining-publish.sql']) {
     await db.exec(await readFile(`supabase/${file}`, 'utf8'));
   }
   await db.exec(`insert into orders(order_number,customer_name,order_type,status,notes)

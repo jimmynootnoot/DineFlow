@@ -32,10 +32,11 @@ For an **existing DineFlow installation**, run these files in the Supabase SQL E
 4. `supabase/se2-03-storage.sql`.
 5. `supabase/se2-04-maya.sql` for the hosted Maya sandbox path.
 6. `supabase/se2-05-table-order-fk.sql` to repair the table link on upgraded databases. This also resolves `orders_table_id_fkey` errors when a guest places a dine-in order before Maya checkout.
+7. `supabase/se2-06-safe-mining-publish.sql` to make batch publishing compatible with databases that require a `WHERE` clause on deletes.
 
 For a **new database**, first run `supabase/dineflow-setup.sql`, then the files above. Do not rerun the old base setup on an upgraded database: its legacy status normalization and policies predate SE2. The SE2 migration is transactional and repeatable. It preserves orders and supports the earlier `chat_sessions.user_id` / `chat_messages.chat_session_id` naming; installation against other legacy schemas must be checked separately.
 
-The linked project was checked read-only during implementation. It had zero indexed knowledge vectors and no embedding credential. The new migrations have **not** been applied to that remote database. They were executed and tested against isolated PostgreSQL with pgvector.
+Check each migration against the connected project before rerunning it. The batch-publisher repair in step 7 has not been applied through the remote SQL Editor; a presentation-only simulated batch was activated separately. Knowledge vectors and an embedding credential are still absent in the connected project.
 
 ## Roles and operations
 
@@ -77,9 +78,11 @@ Each basket counts once, including single-item baskets. Item quantity does not i
 
 To publish an explicitly simulated validation batch, supply server environment variables and run `python scripts/mine_recommendations.py --input docs/fixtures/transactions.json --publish`. Names must match the current menu; the script rejects mismatches. This is deliberately not automatic and does not alter order records.
 
+If an upgraded Supabase project rejects publishing with `DELETE requires a WHERE clause`, apply `supabase/se2-06-safe-mining-publish.sql` in its SQL Editor and rerun the publisher. The one-time `scripts/activate-demo-mining.mjs <generated appendix-a-rules.json>` recovery path activates a simulated batch only when no published run exists; it preserves earlier unpublished rules and rolls back its own inserts on failure. Future batches should use the atomic publisher after the SQL repair.
+
 **Reports → Mined menu associations** displays the latest published batch and exports Appendix A. Cart suggestions use stored rules via the server, exclude unavailable/already-selected items, and fall back to actual same-category top sellers when no rule matches. They never claim arbitrary hand-authored suggestions were mined.
 
-`.github/workflows/ai-batches.yml` provides a nightly 02:00 Philippine-time batch and manual workflow dispatch. Add repository secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `EMBEDDING_API_KEY` to enable it. The workflow is supplied, not deployed or enabled in a remote repository by this change.
+`.github/workflows/ai-batches.yml` provides a nightly 02:00 Philippine-time batch and manual workflow dispatch. It needs repository secrets `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `EMBEDDING_API_KEY`; its remote execution has not been verified. Apply the SQL repair above before relying on future mining runs.
 
 ## Assistant, RAG and Appendix C
 

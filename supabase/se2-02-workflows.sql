@@ -303,7 +303,7 @@ begin
   if p_report->>'source' not in ('simulated','historical') or (p_report->>'transaction_count')::integer < 5 or jsonb_typeof(p_report->'rules') <> 'array' then raise exception 'Invalid batch'; end if;
   if p_report->>'source' = 'simulated' and exists(select 1 from recommendation_runs where source = 'historical') then raise exception 'Simulated rules cannot replace historical mining'; end if;
   insert into recommendation_runs(source,transaction_count,rule_count,report) values(p_report->>'source',(p_report->>'transaction_count')::integer,jsonb_array_length(p_report->'rules'),p_report) returning id into v_run;
-  delete from recommendation_rules;
+  delete from recommendation_rules where id is not null;
   for r in select value from jsonb_array_elements(p_report->'rules') loop
     a := array(select value::uuid from jsonb_array_elements_text(r->'antecedent'));
     c := array(select value::uuid from jsonb_array_elements_text(r->'consequent'));

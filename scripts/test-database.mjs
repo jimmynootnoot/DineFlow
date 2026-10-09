@@ -30,7 +30,7 @@ try {
       insert into chat_messages(chat_session_id,role,content) values('22222222-2222-2222-2222-222222222222','user','Preserved legacy question');`);
   }
   let legacyTableId;
-  for(const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql','se2-05-table-order-fk.sql']){
+  for(const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql','se2-05-table-order-fk.sql','se2-06-safe-mining-publish.sql']){
     if(legacy && file==='se2-02-workflows.sql'){
       await db.exec(`create table legacy_tables(id uuid primary key default gen_random_uuid(),table_number text unique);
         insert into legacy_tables(table_number) values('T-Legacy');
@@ -47,6 +47,7 @@ try {
   }
   await db.exec(await readFile('supabase/se2-02-workflows.sql','utf8'));
   await db.exec(await readFile('supabase/se2-05-table-order-fk.sql','utf8'));
+  await db.exec(await readFile('supabase/se2-06-safe-mining-publish.sql','utf8'));
   console.log('Upgrade and table repair are repeatable.');
   const tableFk=(await q(`select confrelid::regclass::text as target from pg_constraint
     where conrelid='orders'::regclass and conname='orders_table_id_fkey'`)).rows[0];
