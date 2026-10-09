@@ -17,7 +17,8 @@ test('management figures and top sellers use one selected period with demo prove
   render(<DashboardPerformance orders={[]} />);
   expect(await screen.findByText('₱590.00')).toBeInTheDocument();
   expect(screen.getByText('₱295.00')).toBeInTheDocument();
-  expect(screen.getByText(/includes 1 demonstration order/i)).toBeInTheDocument();
+  expect(screen.getByText(/includes demo orders/i)).toBeInTheDocument();
+  expect(screen.queryByText(/do not present these figures/i)).not.toBeInTheDocument();
   expect(screen.getByText('Bangsilog')).toBeInTheDocument();
   expect(serverRequest).toHaveBeenCalledWith('sales-insight', expect.objectContaining({ start: expect.any(String), end: expect.any(String) }));
 

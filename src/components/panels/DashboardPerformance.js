@@ -65,8 +65,7 @@ export default function DashboardPerformance({ orders }) {
     {error && <p className="dashboard-performance__error" role="alert">{error}</p>}
     {loading && <p className="dashboard-performance__note" role="status">Loading sales for {period.start} to {period.end}…</p>}
     {aggregates && !loading && <>
-      <p className="dashboard-performance__note">{period.start} to {period.end} · Philippine time · Revenue and average bill use completed, paid orders.</p>
-      {aggregates.demoOrderCount > 0 && <p className="dashboard-performance__demo" role="note">Includes {aggregates.demoOrderCount} demonstration order{aggregates.demoOrderCount === 1 ? '' : 's'} in this period. Do not present these figures as live restaurant performance.</p>}
+      <p className="dashboard-performance__note">{period.start} to {period.end} · Philippine time · Revenue and average bill use completed, paid orders{aggregates.demoOrderCount > 0 ? ' · Includes demo orders' : ''}.</p>
       <div className="dash-cards dashboard-performance__metrics">
         {[
           { label: 'Net revenue', value: money(aggregates.revenue), sub: 'completed, paid bills' },
