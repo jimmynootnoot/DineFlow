@@ -34,6 +34,9 @@ export async function placeOrder(orderData) {
     p_items: items,
     p_table_session_token: orderData.tableSessionToken || null,
   });
+  if (error?.code === '23503' && error.message?.includes('orders_table_id_fkey')) {
+    throw new Error('We could not link your order to this table. Please ask staff for help. No order or payment was recorded.');
+  }
   if (error) throw error;
   return data;
 }

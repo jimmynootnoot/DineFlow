@@ -31,6 +31,7 @@ For an **existing DineFlow installation**, run these files in the Supabase SQL E
 3. `supabase/se2-02-workflows.sql`.
 4. `supabase/se2-03-storage.sql`.
 5. `supabase/se2-04-maya.sql` for the hosted Maya sandbox path.
+6. `supabase/se2-05-table-order-fk.sql` to repair the table link on upgraded databases. This also resolves `orders_table_id_fkey` errors when a guest places a dine-in order before Maya checkout.
 
 For a **new database**, first run `supabase/dineflow-setup.sql`, then the files above. Do not rerun the old base setup on an upgraded database: its legacy status normalization and policies predate SE2. The SE2 migration is transactional and repeatable. It preserves orders and supports the earlier `chat_sessions.user_id` / `chat_messages.chat_session_id` naming; installation against other legacy schemas must be checked separately.
 

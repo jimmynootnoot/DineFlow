@@ -29,11 +29,34 @@ try {
       insert into chat_sessions(id,user_id) values('22222222-2222-2222-2222-222222222222','11111111-1111-1111-1111-111111111111');
       insert into chat_messages(chat_session_id,role,content) values('22222222-2222-2222-2222-222222222222','user','Preserved legacy question');`);
   }
-  for(const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql']){
+  let legacyTableId;
+  for(const file of ['dineflow-setup.sql','multi-method-payments.sql','se2-01-roles.sql','se2-02-workflows.sql','se2-04-maya.sql','se2-05-table-order-fk.sql']){
+    if(legacy && file==='se2-02-workflows.sql'){
+      await db.exec(`create table legacy_tables(id uuid primary key default gen_random_uuid(),table_number text unique);
+        insert into legacy_tables(table_number) values('T-Legacy');
+        alter table orders add column table_id uuid references legacy_tables(id);
+        insert into orders(order_number,customer_name,order_type,table_number,table_id)
+        select 'LEGACY-TABLE-ORDER','Legacy diner','dine-in',table_number,id from legacy_tables;`);
+      legacyTableId=(await q("select id from legacy_tables where table_number='T-Legacy'")).rows[0].id;
+    }
+    if(legacy && file==='se2-05-table-order-fk.sql'){
+      const current=(await q("insert into dining_tables(table_number) values('T-Legacy') returning id")).rows[0].id;
+      await fails("insert into orders(order_number,customer_name,order_type,table_number,table_id) values('BEFORE-REPAIR','Diner','dine-in','T-Legacy',$1)",[current],/foreign key/);
+    }
     await db.exec(await readFile(`supabase/${file}`,'utf8'));console.log(`Applied ${file}`);
   }
   await db.exec(await readFile('supabase/se2-02-workflows.sql','utf8'));
-  console.log('Upgrade is repeatable.');
+  await db.exec(await readFile('supabase/se2-05-table-order-fk.sql','utf8'));
+  console.log('Upgrade and table repair are repeatable.');
+  const tableFk=(await q(`select confrelid::regclass::text as target from pg_constraint
+    where conrelid='orders'::regclass and conname='orders_table_id_fkey'`)).rows[0];
+  check(tableFk?.target==='dining_tables','Orders table ID references dining_tables');
+  if(legacy){
+    const link=(await q("select table_id,legacy_table_id from orders where order_number='LEGACY-TABLE-ORDER'")).rows[0];
+    const current=(await q("select id from dining_tables where table_number='T-Legacy'")).rows[0].id;
+    check(link.table_id===current && link.legacy_table_id===legacyTableId,'Legacy table ID preserved and mapped to current dining table');
+    await q("delete from orders where order_number='LEGACY-TABLE-ORDER'");
+  }
   if(legacy)check((await q("select m.content,s.customer_id from chat_messages m join chat_sessions s on s.id=m.session_id where m.content='Preserved legacy question'")).rows[0]?.customer_id==='11111111-1111-1111-1111-111111111111','Legacy history preserved and owner mapped');
   const ids={};
   for(const role of ['admin','management','staff','cashier','kitchen','customer','other']){
