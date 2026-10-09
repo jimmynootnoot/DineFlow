@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { rankRecommendations } from '../serverlib/recommendations.mjs';
-import { aggregateSales,periodBounds } from '../serverlib/sales.mjs';
-import { needsStaff,lexicalKnowledge,isComboQuestion,menuKnowledgeForQuestion,menuPairingFallback,trendRecommendationAnswer } from '../serverlib/assistant.mjs';
+import { aggregateSales,periodBounds,sameSalesAggregates,salesSummary } from '../serverlib/sales.mjs';
+import { needsStaff,lexicalKnowledge,isComboQuestion,isAllergySafetyQuestion,allergenReviewAnswer,menuKnowledgeForQuestion,menuPairingFallback,trendRecommendationAnswer } from '../serverlib/assistant.mjs';
 import { validateMayaPayment } from '../serverlib/maya.mjs';
 import { DEMO_PAYMENT, validateDemoPayment } from '../serverlib/demo-payment.mjs';
 const menu=['A','B','C','D'].map(id=>({id,name:id,category:'Mains',available:true,stock:5}));
@@ -50,6 +50,15 @@ test('Philippine date boundaries and paid completed revenue use decimal cents',(
   assert.equal(result.itemTrends[0].quantityChange,1);assert.equal(result.itemTrends[0].trend,'up');
   assert.throws(()=>periodBounds('2026-09-03','2026-09-01'));assert.throws(()=>periodBounds('2026-02-30','2026-03-01'));
 });
+test('sales summaries distinguish demonstration orders and invalidate changed aggregates',()=>{
+  const bounds=periodBounds('2026-10-01','2026-10-09');
+  const order={order_number:'DEMO-ANALYTICS-001',status:'completed',payment_status:'paid',total_amount:'125.00',created_at:'2026-10-02T04:00:00.000Z',order_items:[{menu_item_id:'bangsilog',name:'Bangsilog',quantity:1,price:'125.00'}]};
+  const current=aggregateSales([order],bounds);
+  assert.equal(current.demoOrderCount,1);
+  assert.match(salesSummary(current),/demonstration order/);
+  assert.equal(sameSalesAggregates(current,JSON.parse(JSON.stringify(current))),true);
+  assert.equal(sameSalesAggregates(current,{...current,revenue:0}),false);
+});
 test('sensitive requests escalate and unrelated queries retrieve no context',()=>{
   for(const question of ['Cancel my order','Is it safe for my diabetes?','Give me a senior discount','Offer nutritional advice','Special preparation please'])assert.equal(needsStaff(question),true,question);
   assert.equal(needsStaff('What are Chicken Sisig ingredients?'),false);
@@ -63,6 +72,14 @@ test('live menu retrieval recognizes dish names and broad menu questions',()=>{
   const named=menuKnowledgeForQuestion('What is Bangsilog good for?',rows);
   assert.equal(named.length,1);assert.match(named[0].content,/Marinated milkfish/);
   assert.equal(menuKnowledgeForQuestion('What can I get under PHP 100?',rows).length,1);
+});
+test('allergy safety questions cannot be answered by absence from an allergen list',()=>{
+  const adobo={id:'adobo',name:'Adobo Rice Bowl',price:95,available:true,stock:5,allergens:['soy']};
+  assert.equal(isAllergySafetyQuestion('Is the Adobo Rice Bowl peanut-free?'),true);
+  assert.equal(isAllergySafetyQuestion('Which dishes contain allergens?'),false);
+  assert.equal(menuKnowledgeForQuestion('Is the Adobo Rice Bowl peanut-free?',[adobo])[0].id,'menu:adobo');
+  assert.match(allergenReviewAnswer(adobo),/does not confirm it is free/);
+  assert.match(allergenReviewAnswer(adobo),/Ask staff/);
 });
 test('combo answers distinguish mined trends from menu-based ideas',()=>{
   assert.equal(isComboQuestion('What combos do you recommend?'),true);

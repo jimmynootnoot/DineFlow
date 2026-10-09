@@ -71,12 +71,13 @@ export default function ResearchReportsV2() {
     {a&&<>
       <section aria-labelledby="period-title" className="workflow-section report-section">
         <div className="report-section__heading"><div><p className="report-kicker">Period performance</p><h3 id="period-title">{range.start} to {range.end}</h3></div><span className={`report-change ${a.changePercent>0?'is-up':a.changePercent<0?'is-down':'is-flat'}`}>{a.changePercent==null?'No prior baseline':`${a.changePercent>0?'+':''}${a.changePercent.toFixed(1)}% revenue`}</span></div>
-        <dl className="workflow-metrics report-metrics"><div><dt>Net revenue</dt><dd>{money(a.revenue)}</dd></div><div><dt>Orders</dt><dd>{a.totalOrders}</dd></div><div><dt>Completed & paid</dt><dd>{a.completedOrders}</dd></div><div><dt>Average bill</dt><dd>{money(a.averageOrderValue)}</dd></div></dl>
+        <dl className="workflow-metrics report-metrics"><div><dt>Net revenue</dt><dd>{money(a.revenue)}</dd></div><div><dt>Orders</dt><dd>{a.totalOrders}</dd></div><div><dt>Completed & paid</dt><dd>{a.completedOrders}</dd></div><div><dt>Average bill</dt><dd>{a.completedOrders?money(a.averageOrderValue):'—'}</dd></div></dl>
+        {a.demoOrderCount>0&&<p className="workflow-note" role="note">This period includes {a.demoOrderCount} demonstration order{a.demoOrderCount===1?'':'s'}. Do not present these figures as live-only restaurant performance.</p>}
         <p className="workflow-note">Previous period revenue: {money(a.previousRevenue)} · Discounts and VAT exemptions: {money(a.discounts)}</p>
 
         <div className="report-subsection">
           <div className="workflow-controls"><div><p className="report-kicker">Demand narrative</p><h3>Sales insight</h3></div><button type="button" className="hero-btn hero-btn--outline" disabled={busy||changed} onClick={()=>load(true,Boolean(result.insight))}>{result.insight?'Regenerate summary':'Generate AI summary'}</button></div>
-          {result.insight?<><p className="workflow-prose report-insight">{result.insight.summary}</p><p className="workflow-note">{result.insight.mode==='generative'?'AI summary from aggregated figures':'Computed summary · AI service unavailable'} · Saved {new Date(result.insight.generated_at).toLocaleString('en-PH')}. Cached figures remain unchanged until regenerated.</p></>:<p>No summary generated for this period.</p>}
+          {result.insight?<><p className="workflow-prose report-insight">{result.insight.summary}</p><p className="workflow-note">{result.insight.mode==='generative'?'AI summary from aggregated figures':'Computed summary · AI service unavailable'} · Saved {new Date(result.insight.generated_at).toLocaleString('en-PH')}. The summary is hidden when its saved figures no longer match this period.</p></>:<p>{result.stale?'The saved summary no longer matches the current sales figures. Generate a new summary.':'No summary generated for this period.'}</p>}
         </div>
       </section>
 
@@ -110,7 +111,7 @@ export default function ResearchReportsV2() {
         <li><span>05</span><div><strong>Rank recommendations</strong><p>Sort by lift, confidence, then support; exclude unavailable and already selected dishes.</p></div></li>
       </ol>
 
-      {miningError?<p role="alert" className="workflow-error">{miningError}</p>:!run?<div className="report-empty"><h4>No historical batch yet</h4><p>There are fewer than five eligible completed, paid orders. Recommendations safely use actual same-category best sellers until enough real basket evidence exists.</p></div>:<>
+      {miningError?<p role="alert" className="workflow-error">{miningError}</p>:!run?<div className="report-empty"><h4>No published mining batch yet</h4><p>Apriori results appear after an authorized mining run is published. Until then, cart recommendations use actual same-category best sellers when available. This state does not imply that the database has too few orders.</p></div>:<>
         <div className={`mining-provenance ${run.source==='simulated'?'is-simulated':'is-historical'}`}>
           <div><span className={`report-evidence-badge ${run.source==='simulated'?'is-simulated':'is-historical'}`}>{run.source==='simulated'?'Validation mode':'Historical evidence'}</span><strong>{run.source==='simulated'?'Simulated transactions — not production demand':'Completed, paid historical orders'}</strong></div>
           <p>Published {new Date(run.created_at).toLocaleString('en-PH')} · Dataset fingerprint {String(run.report.dataset_sha256||'unavailable').slice(0,12)}…</p>

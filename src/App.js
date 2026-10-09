@@ -5,9 +5,9 @@ import { useAuth }      from './hooks/useAuth';
 import { useMenu, useOrders }        from './hooks/useData';
 import { addMenuItem, updateMenuItemAvailability, deleteMenuItem, updateMenuItem, uploadDishImage } from './services/menuService';
 import { placeOrder, updateOrderStatus } from './services/orderService';
-import { getDailySales, getBestSellers, getPeriodComparison, exportOrdersCSV } from './services/reportService';
+import { exportOrdersCSV } from './services/reportService';
 import { seedMenuItems, resetAndReseed } from './services/seedService';
-import { createSalesInsight } from './services/assistantService';
+import DashboardPerformance from './components/panels/DashboardPerformance';
 import MayaCheckout from './components/checkout/MayaCheckout';
 import LoginPage    from './components/layout/LoginPage';
 import Icon         from './components/ui/Icon';
@@ -146,11 +146,6 @@ function App() {
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [selectedOrder, setSelectedOrder]   = useState(null);
 
-  // Dashboard stats
-  const [dailyStats, setDailyStats]   = useState(null);
-  const [bestSellers, setBestSellers] = useState([]);
-  const [periodComparison, setPeriodComparison] = useState(null);
-
   // ── Data hooks ─────────────────────────────────────────────
   const { menu, loading: menuLoading } = useMenu(user?.id);
   const { orders } = useOrders(user?.id);
@@ -212,15 +207,6 @@ function App() {
     seedMenuItems().catch(() => {});
   }, [user]);
 
-  useEffect(() => {
-    // Staff reach the dashboard too (see NAV and defaultPage), so they
-    // must load its figures or every KPI reads zero.
-    if (!user || !['Admin', 'Management'].includes(user.role)) return;
-    getDailySales().then(setDailyStats).catch(() => {});
-    getBestSellers(5).then(setBestSellers).catch(() => {});
-    getPeriodComparison(7).then(setPeriodComparison).catch(() => {});
-  }, [user, orders]);
-
   // ── Logout ─────────────────────────────────────────────────
   const handleSecureLogout = () => {
     requestGeneration.current += 1;
@@ -238,9 +224,6 @@ function App() {
     setSelectedDish(null);
     setOrderCustomer('');
     setOrderNotes('');
-    setDailyStats(null);
-    setBestSellers([]);
-    setPeriodComparison(null);
     setMobileNavOpen(false);
   };
 
@@ -451,9 +434,6 @@ function App() {
     return c;
   }, [orders]);
 
-  const completedOrders = useMemo(() => orders.filter(o => o.status === 'completed' && o.paymentStatus === 'paid'), [orders]);
-  const revenue = useMemo(() => completedOrders.reduce((s, o) => s + (o.totalAmount || 0), 0), [completedOrders]);
-
   // ── Login screen ────────────────────────────────────────────
   if (!user) {
     return (
@@ -485,7 +465,7 @@ function App() {
       <div className="page-hero">
         <div>
           <h2 className="page-title">Dashboard</h2>
-          <p className="page-sub">Welcome back! Here's your canteen overview.</p>
+          <p className="page-sub">Restaurant performance and live operations.</p>
         </div>
         <div className="hero-actions">
           {user.role === 'Admin' && (
@@ -497,21 +477,7 @@ function App() {
         </div>
       </div>
 
-      {/* Stat cards */}
-      <div className="dash-cards">
-        {[
-          { label: "Today's Orders",  val: dailyStats?.totalOrders ?? orders.length,       sub: 'total placed' },
-          { label: "Today's Revenue", val: currency(dailyStats?.totalRevenue ?? revenue),  sub: 'from completed' },
-          { label: 'Pending Orders',  val: kitchenQueue.length,                            sub: 'awaiting kitchen' },
-          { label: 'Low Stock Items', val: menu.filter(i => (i.stock ?? 99) < 5).length,   sub: 'need restocking' },
-        ].map(s => (
-          <div key={s.label} className="dash-card">
-            <div className="dash-card__label">{s.label}</div>
-            <div className="dash-card__val">{s.val}</div>
-            <div className="dash-card__sub">{s.sub}</div>
-          </div>
-        ))}
-      </div>
+      <DashboardPerformance orders={orders} />
 
       <div className="dash-grid">
         {/* Recent Orders table */}
@@ -544,17 +510,15 @@ function App() {
           </table>
         </div>
 
-        {/* Low Stock / Top Sellers */}
+        {/* Operational alerts remain separate from the selected sales period. */}
         <div className="dash-side">
-          <div className="card ai-insight">
-            <div className="card-head"><div><p className="ai-insight__eyebrow">AI sales insight</p><h3 className="card-title">Performance brief</h3></div></div>
-            <p>{createSalesInsight({ dailyStats, bestSellers, comparison: periodComparison })}</p>
-            <small>Generated only from recorded DineFlow sales metrics.</small>
-          </div>
           <div className="card">
             <div className="card-head">
-              <h3 className="card-title">Low Stock</h3>
+              <h3 className="card-title">Live operations</h3>
             </div>
+            <div className="stock-row"><span>Orders awaiting kitchen</span><span className="stock-badge">{kitchenQueue.length}</span></div>
+            <div className="stock-row"><span>Low-stock menu items</span><span className="stock-badge">{menu.filter(i => (i.stock ?? 99) < 5).length}</span></div>
+            <h4 className="dashboard-alert-title">Low stock</h4>
             {menu.filter(i => (i.stock ?? 99) < 5).length === 0
               ? <div className="card-empty"><Icon name="check" size={22} /><p>All stock levels are healthy.</p></div>
               : menu.filter(i => (i.stock ?? 99) < 5).map(i => (
@@ -566,22 +530,6 @@ function App() {
             }
           </div>
 
-          {bestSellers.length > 0 && (
-            <div className="card">
-              <div className="card-head">
-                <h3 className="card-title">Top Sellers</h3>
-              </div>
-              <ol className="top-sellers">
-                {bestSellers.map((item, i) => (
-                  <li key={i}>
-                    <span className="ts-rank">{i + 1}</span>
-                    <span className="ts-name">{item.name}</span>
-                    <span className="ts-val">{item.quantity} sold</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -1126,55 +1074,6 @@ function App() {
           )
         }
       </div>
-    </div>
-  );
-
-  const renderReports = () => (
-    <div className="page-content">
-      <div className="page-hero">
-        <div>
-          <h2 className="page-title">Reports</h2>
-          <p className="page-sub">Sales data and analytics</p>
-        </div>
-        <button className="hero-btn hero-btn--outline" onClick={() => exportOrdersCSV(orders)}><Icon name="download" /> Export CSV</button>
-      </div>
-
-      <div className="dash-cards">
-        {[
-          { label: "Today's Orders",  val: dailyStats?.totalOrders ?? orders.length },
-          { label: 'Completed',       val: dailyStats?.completedOrders ?? completedOrders.length },
-          { label: 'Cancelled',       val: dailyStats?.cancelledOrders ?? orders.filter(o => o.status === 'cancelled').length },
-          { label: 'Revenue',         val: currency(dailyStats?.totalRevenue ?? revenue) },
-          { label: 'Avg. Order Value', val: currency(dailyStats?.averageOrderValue ?? 0) },
-        ].map(s => (
-          <div key={s.label} className="dash-card">
-            <div className="dash-card__label">{s.label}</div>
-            <div className="dash-card__val">{s.val}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="card report-comparison">
-        <div><p className="dash-card__label">7-day comparison</p><h3>{periodComparison?.changePercent == null ? 'Collecting a baseline' : `${periodComparison.changePercent >= 0 ? '+' : ''}${periodComparison.changePercent.toFixed(1)}%`}</h3><p>Current {currency(periodComparison?.currentRevenue)} · Previous {currency(periodComparison?.previousRevenue)}</p></div>
-        <p>{createSalesInsight({ dailyStats, bestSellers, comparison: periodComparison })}</p>
-      </div>
-
-      {bestSellers.length > 0 && (
-        <div className="card">
-          <div className="card-head">
-            <h3 className="card-title">Top Sellers</h3>
-          </div>
-          <ol className="top-sellers">
-            {bestSellers.map((item, i) => (
-              <li key={i}>
-                <span className="ts-rank">{i + 1}</span>
-                <span className="ts-name">{item.name}</span>
-                <span className="ts-val">{item.quantity} sold · {currency(item.revenue)}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
     </div>
   );
 

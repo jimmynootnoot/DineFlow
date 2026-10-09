@@ -1,5 +1,5 @@
 import { authenticate, endpoint, embed, generateText, httpError, readAll } from '../serverlib/platform.mjs';
-import { needsStaff, lexicalKnowledge, isComboQuestion, menuKnowledgeForQuestion, menuPairingFallback, trendRecommendationAnswer, ASSISTANT_INSTRUCTIONS, STAFF_ANSWER, UNSUPPORTED_ANSWER } from '../serverlib/assistant.mjs';
+import { needsStaff, lexicalKnowledge, isComboQuestion, isAllergySafetyQuestion, allergenReviewAnswer, menuKnowledge, menuKnowledgeForQuestion, menuPairingFallback, trendRecommendationAnswer, ASSISTANT_INSTRUCTIONS, STAFF_ANSWER, UNSUPPORTED_ANSWER } from '../serverlib/assistant.mjs';
 
 const MENU_FIELDS = 'id,name,description,price,category,serving_size,prep_minutes,spice_level,ingredients,allergens,available,stock,featured';
 
@@ -22,6 +22,12 @@ return endpoint(async request => {
   let answer, mode = 'approved-data', knowledge = [], escalationSuggested = false;
   if (needsStaff(question)) {
     answer = STAFF_ANSWER; mode = 'staff-required'; escalationSuggested = true;
+  } else if (isAllergySafetyQuestion(question)) {
+    const menu = await readAll(() => db.from('menu_items').select(MENU_FIELDS).eq('available',true).gt('stock',0).order('name'));
+    const named = menu.find(item => item.name && question.toLowerCase().includes(item.name.toLowerCase()));
+    answer = allergenReviewAnswer(named);
+    knowledge = named ? menuKnowledge([named]) : [];
+    mode = 'allergen-review'; escalationSuggested = true;
   } else if (/\b(status|where|ready|track)\b.*\border\b|\border\b.*\b(status|ready|track)\b/i.test(question)) {
     const { data, error } = await db.from('orders').select('order_number,status,order_type,table_number').eq('customer_id',user.id).order('created_at',{ascending:false}).limit(1);
     if (error) throw error;

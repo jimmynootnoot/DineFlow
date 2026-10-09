@@ -12,6 +12,7 @@ const MODE_LABELS = {
   'menu-retrieval': 'AI · live menu',
   'trend-recommendation': 'Apriori · order trends',
   'menu-recommendation': 'Current menu · pairing ideas',
+  'allergen-review': 'Approved menu · staff verification needed',
 };
 
 export default function AssistantPanel({ user }) {
@@ -78,7 +79,7 @@ export default function AssistantPanel({ user }) {
       {open && (
         <section className="assistant__panel" aria-label="DineFlow menu assistant">
           <header className="assistant__head">
-            <div><h2>DineFlow Guide</h2><span className="assistant__status">Online restaurant assistant</span></div>
+            <div><h2>DineFlow Guide</h2><span className="assistant__status">Grounded assistant · approved menu information</span></div>
             <button className="assistant__close" onClick={() => setOpen(false)} aria-label="Close assistant"><Icon name="x" /></button>
           </header>
           <div className="assistant__starters"><button disabled={loading||historyLoading||escalating} onClick={()=>{setSessionId(null);setMessages([{role:'assistant',text:'New conversation. Ask about the approved menu.'}]);setHistoryNotice('');}}>New conversation</button><button onClick={exportTranscript}>Export transcript</button></div>

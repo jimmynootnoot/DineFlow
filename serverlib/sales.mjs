@@ -46,6 +46,7 @@ export function aggregateSales(orders, bounds) {
     };
   }).sort((a,b)=>Math.abs(b.quantityChange)-Math.abs(a.quantityChange)||b.quantity-a.quantity||a.name.localeCompare(b.name));
   return { totalOrders:current.length,completedOrders:paid.length,cancelledOrders:current.filter(o=>o.status==='cancelled').length,
+    demoOrderCount:current.filter(o=>/^DEMO-/i.test(o.order_number||'')).length,
     revenue:revenue/100,previousRevenue:priorRevenue/100,averageOrderValue:paid.length ? Math.round(revenue/paid.length)/100 : 0,
     changePercent:priorRevenue ? (revenue-priorRevenue)/priorRevenue*100 : null,
     discounts:paid.reduce((n,o)=>n+cents(o.discount_amount||0)+cents(o.vat_exemption||0),0)/100,
@@ -60,5 +61,10 @@ export function aggregateSales(orders, bounds) {
 export function salesSummary(aggregates) {
   const a = aggregates;
   const rising = a.itemTrends?.find(item=>item.quantityChange>0);
-  return `${a.totalOrders} orders were recorded in this period. ${a.completedOrders} completed, paid orders generated PHP ${a.revenue.toFixed(2)}, with an average of PHP ${a.averageOrderValue.toFixed(2)}. ${a.changePercent == null ? 'There is no prior-period revenue baseline.' : `Revenue changed by ${a.changePercent.toFixed(1)}% against the previous equal-length period.`}${a.items[0] ? ` ${a.items[0].name} led with ${a.items[0].quantity} sold.` : ''}${rising ? ` ${rising.name} recorded the largest positive unit change at +${rising.quantityChange}.` : ''}`;
+  return `${a.totalOrders} orders were recorded in this period. ${a.completedOrders} completed, paid orders generated PHP ${a.revenue.toFixed(2)}${a.completedOrders ? `, with an average of PHP ${a.averageOrderValue.toFixed(2)}` : ''}. ${a.changePercent == null ? 'There is no prior-period revenue baseline.' : `Revenue changed by ${a.changePercent.toFixed(1)}% against the previous equal-length period.`}${a.items[0] ? ` ${a.items[0].name} led with ${a.items[0].quantity} sold.` : ''}${rising ? ` ${rising.name} recorded the largest positive unit change at +${rising.quantityChange}.` : ''}${a.demoOrderCount ? ` This period includes ${a.demoOrderCount} demonstration order${a.demoOrderCount===1?'':'s'}; these figures are not solely live restaurant performance.` : ''}`;
 }
+
+const stableValue = value => Array.isArray(value) ? value.map(stableValue)
+  : value && typeof value === 'object' ? Object.fromEntries(Object.keys(value).sort().map(key => [key,stableValue(value[key])]))
+  : value;
+export const sameSalesAggregates = (left,right) => JSON.stringify(stableValue(left)) === JSON.stringify(stableValue(right));

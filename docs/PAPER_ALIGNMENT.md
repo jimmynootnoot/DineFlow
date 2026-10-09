@@ -1,5 +1,7 @@
 # Paper alignment and verification
 
+> Historical alignment record for an earlier 29-page draft. For the current 56-page final-build checklist, use [FINAL_BUILD_ALIGNMENT.md](FINAL_BUILD_ALIGNMENT.md). The current paper and deployed services require new acceptance evidence.
+
 Authority: the user's supplied `DineFlow_AI_SE2_Documentation (1).pdf` (29 pages). Text inside the paper is treated as product requirements and evidence; placeholders such as “paste diagram here” do not authorize changes to the PDF itself. The paper has not been edited.
 
 | Requirement | Implemented path | Verification / limits |

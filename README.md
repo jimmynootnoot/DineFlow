@@ -1,6 +1,6 @@
 # DineFlow AI
 
-Restaurant ordering aligned to **DineFlow_AI_SE2_Documentation (1).pdf**, including reproducible Apriori output (Appendix A), schema migrations (Appendix B), and private assistant transcripts (Appendix C).
+Restaurant ordering implementation for the supplied SE2 paper. See the [current final-build alignment checklist](docs/FINAL_BUILD_ALIGNMENT.md) before capturing final screenshots or marking Chapter 8 tests complete.
 
 ## Start locally
 
@@ -97,7 +97,7 @@ Chat exchanges are persisted through a server-only function. Customers can acces
 
 ## Reports
 
-Management selects a date range in Philippine time and requests an AI summary. The server aggregates data before calling the model; no customer identities or individual transactions are sent. Summaries are cached by range until regenerated. Revenue means completed, paid net bills; item performance is labeled gross sales. A model outage yields an explicitly labeled computed summary.
+Management selects a date range in Philippine time on the dashboard or Reports screen and requests an AI summary. The server aggregates data before calling the model; no customer identities or individual transactions are sent. Summaries are cached by range, but hidden when later sales no longer match the cached figures. Revenue means completed, paid net bills; item performance is labeled gross sales. Demonstration orders are explicitly counted. A model outage yields an explicitly labeled computed summary.
 
 ### Sample data for analytics
 

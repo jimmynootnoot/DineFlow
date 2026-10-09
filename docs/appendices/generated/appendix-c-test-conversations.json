@@ -29,12 +29,26 @@
       "saved": true
     },
     {
+      "question": "Is the Adobo Rice Bowl peanut-free?",
+      "answer": "The current menu lists soy under allergens for Adobo Rice Bowl. That does not confirm it is free of other allergens or cross-contact. Please use Ask staff to verify ingredients and preparation before ordering.",
+      "mode": "allergen-review",
+      "sources": [
+        {
+          "id": "menu:menu-2",
+          "title": "menu_item"
+        }
+      ],
+      "escalationSuggested": true,
+      "sessionId": "00000000-0000-4000-8000-000000000003",
+      "saved": true
+    },
+    {
       "question": "Cancel my order and give me a discount",
       "answer": "That request requires restaurant staff. Use Ask staff to forward it for review. I cannot approve discounts, change orders, or provide medical, nutritional, or dietary advice.",
       "mode": "staff-required",
       "sources": [],
       "escalationSuggested": true,
-      "sessionId": "00000000-0000-4000-8000-000000000003",
+      "sessionId": "00000000-0000-4000-8000-000000000004",
       "saved": true
     }
   ]

@@ -13,6 +13,13 @@ export function lexicalKnowledge(question, rows) {
 export const isComboQuestion = question => /\b(combo|combos|pair|pairs|paired|pairing|pairings|go(?:es)? (?:well )?with|best with)\b/i.test(question)
   || /\b(recommend|suggest)\w*\b.*\b(meal|order|combination)\b/i.test(question);
 
+export const isAllergySafetyQuestion = question => /\b(safe|allergic|allergy|allergies|cross[- ]?contact|cross[- ]?contamination)\b|\b\w+[- ]free\b|\b(contain|have|include)\b.{0,45}\b(peanuts?|nuts?|fish|eggs?|soy|milk|dairy|gluten|wheat|shellfish|sesame)\b/i.test(question);
+export const allergenReviewAnswer = item => {
+  if (!item) return 'I cannot confirm allergy safety from the menu alone. Please use Ask staff to verify ingredients and preparation before ordering.';
+  const listed = Array.isArray(item.allergens) && item.allergens.length ? `lists ${item.allergens.join(', ')} under allergens` : 'does not list specific allergens';
+  return `The current menu ${listed} for ${item.name}. That does not confirm it is free of other allergens or cross-contact. Please use Ask staff to verify ingredients and preparation before ordering.`;
+};
+
 const money = value => `PHP ${Number(value).toFixed(2)}`;
 export function menuKnowledge(rows) {
   return (rows || []).filter(row => row.available !== false && Number(row.stock ?? 1) > 0).map(row => ({
@@ -26,6 +33,8 @@ export function menuKnowledgeForQuestion(question, rows, limit = 12) {
   const approved = menuKnowledge(rows);
   const amount = question.match(/(?:under|below|up to|budget(?: of)?|less than)\s*(?:php|₱|p)?\s*(\d+(?:\.\d{1,2})?)/i)?.[1];
   if (amount) return approved.filter(row => Number(rows.find(item => `menu:${item.id}` === row.id)?.price) <= Number(amount)).slice(0, limit);
+  const named = (rows || []).find(row => row.name && question.toLowerCase().includes(row.name.toLowerCase()));
+  if (named) return approved.filter(row => row.id === `menu:${named.id}`).slice(0, limit);
   if (/\b(allergen|allergens|allergy|allergies)\b/i.test(question)) return approved.filter(row => !/Allergens: none listed\./i.test(row.content)).slice(0, limit);
   const direct = lexicalKnowledge(question, approved);
   if (direct.length) return direct.slice(0, limit);
