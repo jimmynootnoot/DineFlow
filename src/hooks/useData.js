@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { subscribeMenu, getMenuItems } from '../services/menuService';
 import { subscribeOrders } from '../services/orderService';
 
@@ -6,6 +6,8 @@ export const useMenu = (identity = null) => {
   const [menu, setMenu] = useState([]);
   const [loading, setLoading] = useState(true);
   const retryRef = useRef(null);
+  const refreshRef = useRef(() => Promise.resolve([]));
+  const refresh = useCallback(() => refreshRef.current(), []);
 
   useEffect(() => {
     setMenu([]);
@@ -13,7 +15,7 @@ export const useMenu = (identity = null) => {
     let active = true;
     setLoading(true);
 
-    const unsub = subscribeMenu((items) => {
+    const subscription = subscribeMenu((items) => {
       setMenu(items);
       setLoading(false);
 
@@ -31,31 +33,39 @@ export const useMenu = (identity = null) => {
         clearTimeout(retryRef.current);
       }
     });
+    refreshRef.current = subscription.refresh;
 
     return () => {
       active = false;
-      unsub();
+      refreshRef.current = () => Promise.resolve([]);
+      subscription.unsubscribe();
       clearTimeout(retryRef.current);
     };
   }, [identity]);
 
-  return { menu, loading };
+  return { menu, loading, refresh };
 };
 
 export const useOrders = (identity = null) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const refreshRef = useRef(() => Promise.resolve([]));
+  const refresh = useCallback(() => refreshRef.current(), []);
 
   useEffect(() => {
     setOrders([]);
     if (!identity) { setLoading(false); return; }
     setLoading(true);
-    const unsub = subscribeOrders((list) => {
+    const subscription = subscribeOrders((list) => {
       setOrders(list);
       setLoading(false);
     });
-    return unsub;
+    refreshRef.current = subscription.refresh;
+    return () => {
+      refreshRef.current = () => Promise.resolve([]);
+      subscription.unsubscribe();
+    };
   }, [identity]);
 
-  return { orders, loading };
+  return { orders, loading, refresh };
 };

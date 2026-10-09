@@ -54,19 +54,36 @@ export async function getAllOrders() {
 export function subscribeOrders(callback) {
   let active = true;
   let timer;
-  const load = () => {
+  let requestId = 0;
+  let hasLoaded = false;
+  const refresh = async () => {
     clearTimeout(timer);
-    timer = setTimeout(async () => {
-      try { const rows=await getAllOrders(); if (active) callback(rows); }
-      catch (error) { console.error('[orderService] Supabase read failed:', error.message); if (active) callback([]); }
+    const currentRequest = ++requestId;
+    const rows = await getAllOrders();
+    if (active && currentRequest === requestId) {
+      hasLoaded = true;
+      callback(rows);
+    }
+    return rows;
+  };
+  const scheduleLoad = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      void refresh().catch((error) => {
+        console.error('[orderService] Supabase read failed:', error.message);
+        if (active && !hasLoaded) callback([]);
+      });
     }, 80);
   };
-  load();
+  scheduleLoad();
   const channel = supabase.channel('orders-live')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, load)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, load)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, scheduleLoad)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, scheduleLoad)
     .subscribe();
-  return () => { active = false; clearTimeout(timer); void supabase.removeChannel(channel); };
+  return {
+    refresh,
+    unsubscribe: () => { active = false; clearTimeout(timer); void supabase.removeChannel(channel); },
+  };
 }
 
 export async function getOrdersByCustomer(customerId) { return (await getAllOrders()).filter((order) => order.customerId === customerId); }

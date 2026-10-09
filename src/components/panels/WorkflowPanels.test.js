@@ -26,7 +26,8 @@ test('a failed recommendation service leaves ordering available',async()=>{
 
 test('discount requires staff verification and cash records tendered amount',async()=>{
   supabase.rpc.mockResolvedValue({error:null});recordPayment.mockResolvedValue({changeDue:50});
-  render(<BillingControls order={{id:'order',totalAmount:100,subtotal:112,status:'served',paymentStatus:'unpaid'}}/>);
+  const onUpdated=jest.fn().mockResolvedValue();
+  render(<BillingControls order={{id:'order',totalAmount:100,subtotal:112,status:'served',paymentStatus:'unpaid'}} onUpdated={onUpdated}/>);
   fireEvent.change(screen.getByLabelText('Statutory discount'),{target:{value:'senior'}});
   expect(screen.getByRole('button',{name:'Apply discount'})).toBeDisabled();
   fireEvent.change(screen.getByLabelText(/Eligible portion/),{target:{value:'112'}});
@@ -36,4 +37,5 @@ test('discount requires staff verification and cash records tendered amount',asy
   fireEvent.change(screen.getByLabelText(/Cash tendered/),{target:{value:'150'}});fireEvent.click(screen.getByRole('button',{name:'Record cash payment'}));
   expect(await screen.findByText(/Change: ₱50.00/)).toBeInTheDocument();
   expect(recordPayment).toHaveBeenCalledWith({orderId:'order',method:'CASH',amount:150});
+  expect(onUpdated).toHaveBeenCalledTimes(2);
 });

@@ -3,10 +3,11 @@ import { supabase } from '../../services/supabase';
 import { recordPayment } from '../../services/reportService';
 import '../panels/WorkflowPanels.css';
 
-export default function BillingControls({order}) {
+export default function BillingControls({order, onUpdated}) {
   const [type,setType]=useState(order.discountType||'none'),[eligible,setEligible]=useState(String(order.discountEligibleAmount||0)),[tendered,setTendered]=useState(''),[verified,setVerified]=useState(false),[error,setError]=useState(''),[result,setResult]=useState(null),[busy,setBusy]=useState(false);
-  const apply=async e=>{e.preventDefault();setBusy(true);setError('');setResult(null);const {error:failure}=await supabase.rpc('apply_order_discount',{p_order_id:order.id,p_type:type,p_eligible_amount:type==='none'?0:Number(eligible)});if(failure)setError(failure.message);else setResult({message:'Discount saved. The bill updates from the recorded total.'});setBusy(false);};
-  const settle=async e=>{e.preventDefault();setBusy(true);setError('');try{const payment=await recordPayment({orderId:order.id,method:'CASH',amount:Number(tendered)});setResult({message:`Cash recorded. Change: ₱${Number(payment.changeDue).toFixed(2)}.`});}catch(failure){setError(failure.message);}finally{setBusy(false);}};
+  const refreshAfterSave=async(message)=>{try{await onUpdated?.();setResult({message});}catch{setResult({message:`${message} The bill could not refresh; reopen this order to see the latest total.`});}};
+  const apply=async e=>{e.preventDefault();setBusy(true);setError('');setResult(null);try{const {error:failure}=await supabase.rpc('apply_order_discount',{p_order_id:order.id,p_type:type,p_eligible_amount:type==='none'?0:Number(eligible)});if(failure)throw failure;await refreshAfterSave('Discount saved. The bill now shows the recorded total.');}catch(failure){setError(failure.message);}finally{setBusy(false);}};
+  const settle=async e=>{e.preventDefault();setBusy(true);setError('');try{const payment=await recordPayment({orderId:order.id,method:'CASH',amount:Number(tendered)});await refreshAfterSave(`Cash recorded. Change: ₱${Number(payment.changeDue).toFixed(2)}.`);}catch(failure){setError(failure.message);}finally{setBusy(false);}};
   return <section className="workflow workflow-section" aria-label="Staff billing"><h3>Billing</h3>{error&&<p role="alert" className="workflow-error">{error}</p>}{result&&<p role="status">{result.message}</p>}
     <p>Bill total: <strong>₱{order.totalAmount.toFixed(2)}</strong> · {order.paymentStatus}</p>
     {order.paymentStatus==='unpaid'&&!['cancelled','completed'].includes(order.status)&&<>

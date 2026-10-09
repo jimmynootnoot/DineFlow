@@ -127,6 +127,7 @@ function App() {
   const [showAddForm, setShowAddForm]       = useState(false);
   const [seeding, setSeeding]               = useState(false);
   const [uploadingImage,setUploadingImage] = useState(false);
+  const [menuUpdatingId, setMenuUpdatingId] = useState(null);
 
   // Cart
   const [cart, setCart]                     = useState([]);
@@ -147,8 +148,8 @@ function App() {
   const [selectedOrder, setSelectedOrder]   = useState(null);
 
   // ── Data hooks ─────────────────────────────────────────────
-  const { menu, loading: menuLoading } = useMenu(user?.id);
-  const { orders } = useOrders(user?.id);
+  const { menu, loading: menuLoading, refresh: refreshMenu } = useMenu(user?.id);
+  const { orders, refresh: refreshOrders } = useOrders(user?.id);
 
   // ── Side effects ────────────────────────────────────────────
   useEffect(() => {
@@ -242,6 +243,7 @@ function App() {
         prepMinutes: parseInt(menuForm.prepMinutes) || 15, featured: menuForm.featured,
         available: true,
       });
+      await refreshMenu();
       setMenuForm(emptyMenuForm);
       setShowAddForm(false);
       toast.success('Menu item added!');
@@ -261,6 +263,7 @@ function App() {
         spiceLevel: menuForm.spiceLevel, servingSize: menuForm.servingSize.trim(),
         prepMinutes: parseInt(menuForm.prepMinutes) || 15, featured: menuForm.featured,
       });
+      await refreshMenu();
       setEditingItem(null);
       setMenuForm(emptyMenuForm);
       toast.success('Item updated!');
@@ -275,19 +278,26 @@ function App() {
 
   const handleDeleteMenuItem = async (id) => {
     if (!window.confirm('Delete this menu item?')) return;
-    try { await deleteMenuItem(id); toast.success('Item deleted.'); }
+    try { await deleteMenuItem(id); await refreshMenu(); toast.success('Item deleted.'); }
     catch (err) { toast.error(err.message); }
   };
 
   const toggleAvailability = async (id, available) => {
-    try { await updateMenuItemAvailability(id, available); }
-    catch (err) { toast.error(err.message); }
+    if (menuUpdatingId === id) return;
+    setMenuUpdatingId(id);
+    try {
+      await updateMenuItemAvailability(id, available);
+      try { await refreshMenu(); }
+      catch { toast.error('Availability saved, but the menu could not refresh. Check your connection and reload.'); }
+    } catch (err) { toast.error(err.message); }
+    finally { setMenuUpdatingId(null); }
   };
 
   const handleSeed = async () => {
     setSeeding(true);
     try {
       const result = await seedMenuItems();
+      await refreshMenu();
       toast(result.message);
     } catch (err) { toast.error(err.message); }
     setSeeding(false);
@@ -298,6 +308,7 @@ function App() {
     setSeeding(true);
     try {
       const result = await resetAndReseed();
+      await refreshMenu();
       toast.success(result.message);
     } catch (err) { toast.error(err.message); }
     setSeeding(false);
@@ -357,6 +368,7 @@ function App() {
         items:         cart,
       });
       if (identityRef.current !== actorId || requestGeneration.current !== generation) return;
+      void refreshOrders().catch(() => toast.error('Order placed, but the list could not refresh. Please reopen Orders.'));
       const receipt = { ...newOrder, customerName: orderCustomer.trim(), orderType, tableNumber: orderType === 'dine-in' ? orderTable.trim() : null, notes: orderNotes.trim(), items: orderedItems, subtotal: newOrder.totalAmount, serviceFee: 0, paymentStatus: 'unpaid', status: 'confirmed', createdAt: new Date().toISOString() };
       setPendingReceipt(receipt);
       if (user.role === 'Customer') {
@@ -386,6 +398,8 @@ function App() {
     try {
       setStatusUpdatingId(id);
       await updateOrderStatus(id, status);
+      try { await refreshOrders(); }
+      catch { toast.error('Status saved, but the list could not refresh. Check your connection and reload.'); }
     } catch (err) { toast.error(err.message); }
     finally { setStatusUpdatingId(null); }
   };
@@ -799,7 +813,7 @@ function App() {
               ))}
             </ul>
             {selectedOrder.notes && <p className="detail-note"><Icon name="note" /> {selectedOrder.notes}</p>}
-            {['Admin','Management','Cashier','Staff'].includes(user.role) && <BillingControls key={selectedOrder.id} order={orders.find(order=>order.id===selectedOrder.id)||selectedOrder}/>}
+            {['Admin','Management','Cashier','Staff'].includes(user.role) && <BillingControls key={selectedOrder.id} order={orders.find(order=>order.id===selectedOrder.id)||selectedOrder} onUpdated={refreshOrders}/>}
           </div>
         )}
       </div>
@@ -951,7 +965,7 @@ function App() {
                   <div className="menu-admin-card__footer">
                     <button
                       type="button"
-                      disabled={!canManageMenu}
+                      disabled={!canManageMenu || menuUpdatingId === item.id}
                       className={`menu-admin-card__status ${item.available ? 'is-available' : 'is-sold-out'}`}
                       aria-label={`${item.name} is ${item.available ? 'available' : 'sold out'}. Toggle availability`}
                       onClick={() => toggleAvailability(item.id, !item.available)}
@@ -1105,6 +1119,7 @@ function App() {
         orderNumber={pendingReceipt?.orderNumber}
         total={pendingOrderTotal}
         onPaymentComplete={({ method = 'CARD', settled = true } = {}) => {
+          if (settled) void refreshOrders().catch(() => toast.error('Payment saved, but the order list could not refresh.'));
           toast.success(settled ? 'Payment recorded.' : 'Order placed — pay at the counter.');
           if (pendingReceipt) {
             setReceiptOrder({

@@ -72,20 +72,31 @@ export async function getMenuItems() {
 
 export function subscribeMenu(callback) {
   let active = true;
-  const load = async () => {
-    try {
-      const items = await getMenuItems();
-      if (active) callback(items);
-    } catch (error) {
-      console.error('[menuService] Supabase read failed:', error.message);
-      if (active) callback([]);
+  let requestId = 0;
+  let hasLoaded = false;
+  const refresh = async () => {
+    const currentRequest = ++requestId;
+    const items = await getMenuItems();
+    if (active && currentRequest === requestId) {
+      hasLoaded = true;
+      callback(items);
     }
+    return items;
   };
-  void load();
+  const load = () => {
+    void refresh().catch((error) => {
+      console.error('[menuService] Supabase read failed:', error.message);
+      if (active && !hasLoaded) callback([]);
+    });
+  };
+  load();
   const channel = supabase.channel('menu-items-live')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, load)
     .subscribe();
-  return () => { active = false; void supabase.removeChannel(channel); };
+  return {
+    refresh,
+    unsubscribe: () => { active = false; void supabase.removeChannel(channel); },
+  };
 }
 
 export async function addMenuItem(item) {
