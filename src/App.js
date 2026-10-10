@@ -6,6 +6,7 @@ import { useMenu, useOrders }        from './hooks/useData';
 import { addMenuItem, updateMenuItemAvailability, deleteMenuItem, updateMenuItem, uploadDishImage } from './services/menuService';
 import { placeOrder, updateOrderStatus } from './services/orderService';
 import { exportOrdersCSV } from './services/reportService';
+import { MENU_SORT_OPTIONS, sortMenuItems } from './utils/menuSort';
 import { seedMenuItems, resetAndReseed } from './services/seedService';
 import DashboardPerformance from './components/panels/DashboardPerformance';
 import MayaCheckout from './components/checkout/MayaCheckout';
@@ -122,6 +123,8 @@ function App() {
   // Menu management
   const [menuCategory, setMenuCategory]     = useState('All');
   const [menuSearch, setMenuSearch]         = useState('');
+  const [menuSort, setMenuSort]             = useState('default');
+  const [menuAvailability, setMenuAvailability] = useState('all');
   const emptyMenuForm = { name: '', description: '', category: 'Sides', price: '', image: '', stock: '', ingredients: '', allergens: '', spiceLevel: 'none', servingSize: '1 serving', prepMinutes: '15', featured: false };
   const [menuForm, setMenuForm]             = useState(emptyMenuForm);
   const [editingItem, setEditingItem]       = useState(null);
@@ -142,6 +145,7 @@ function App() {
   const [placingOrder, setPlacingOrder]     = useState(false);
   const [catFilter, setCatFilter]           = useState('All');
   const [menuSearchOrder, setMenuSearchOrder] = useState('');
+  const [orderMenuSort, setOrderMenuSort]   = useState('default');
 
   // Orders panel
   const [filterStatus, setFilterStatus]     = useState('all');
@@ -413,25 +417,26 @@ function App() {
   const availableMenu = useMemo(() => menu.filter(i => i.available), [menu]);
   const menuCategories = useMemo(() => ['All', ...new Set(menu.map(item => item.category).filter(Boolean))], [menu]);
 
-  const filteredMenuItems = useMemo(() => availableMenu
+  const filteredMenuItems = useMemo(() => sortMenuItems(availableMenu
     .filter(i => catFilter === 'All' || i.category === catFilter)
     .filter(i => {
       const query = menuSearchOrder.trim().toLowerCase();
       return !query || [i.name, i.description, i.category]
         .filter(Boolean)
         .some(value => value.toLowerCase().includes(query));
-    }),
-    [availableMenu, catFilter, menuSearchOrder]);
+    }), orderMenuSort),
+    [availableMenu, catFilter, menuSearchOrder, orderMenuSort]);
 
-  const displayedMenu = useMemo(() => menu
+  const displayedMenu = useMemo(() => sortMenuItems(menu
     .filter(i => menuCategory === 'All' || i.category === menuCategory)
+    .filter(i => menuAvailability === 'all' || (menuAvailability === 'available' ? i.available : !i.available))
     .filter(i => {
       const query = menuSearch.trim().toLowerCase();
       return !query || [i.name, i.description, i.category]
         .filter(Boolean)
         .some(value => value.toLowerCase().includes(query));
-    }),
-    [menu, menuCategory, menuSearch]);
+    }), menuSort),
+    [menu, menuCategory, menuSearch, menuSort, menuAvailability]);
 
   const myOrders = useMemo(() => {
     if (!user || user.role !== 'Customer') return [];
@@ -610,9 +615,16 @@ function App() {
             </dl>
           </section>
           <div className="pos-filters">
-            <div className="pos-search-wrap">
-              <Icon name="search" />
-              <input className="pos-search" aria-label="Search the menu" placeholder="Search dishes, flavors, or categories" value={menuSearchOrder} onChange={e => setMenuSearchOrder(e.target.value)} />
+            <div className="menu-filter-row">
+              <div className="pos-search-wrap">
+                <Icon name="search" />
+                <input className="pos-search" aria-label="Search the menu" placeholder="Search dishes, flavors, or categories" value={menuSearchOrder} onChange={e => setMenuSearchOrder(e.target.value)} />
+              </div>
+              <label className="menu-filter-select">Sort by
+                <select aria-label="Sort ordering menu" value={orderMenuSort} onChange={e => setOrderMenuSort(e.target.value)}>
+                  {MENU_SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
             </div>
             <div className="cat-strip" aria-label="Menu categories">
               {menuCategories.map(c => (
@@ -928,9 +940,23 @@ function App() {
         </div>
 
         <div className="menu-toolbar">
-          <div className="pos-search-wrap">
-            <Icon name="search" />
-            <input className="pos-search" aria-label="Search menu items" placeholder="Search dishes, descriptions, or categories" value={menuSearch} onChange={e => setMenuSearch(e.target.value)} />
+          <div className="menu-filter-row">
+            <div className="pos-search-wrap">
+              <Icon name="search" />
+              <input className="pos-search" aria-label="Search menu items" placeholder="Search dishes, descriptions, or categories" value={menuSearch} onChange={e => setMenuSearch(e.target.value)} />
+            </div>
+            <label className="menu-filter-select">Availability
+              <select aria-label="Filter menu by availability" value={menuAvailability} onChange={e => setMenuAvailability(e.target.value)}>
+                <option value="all">All dishes</option>
+                <option value="available">Available</option>
+                <option value="sold-out">Sold out</option>
+              </select>
+            </label>
+            <label className="menu-filter-select">Sort by
+              <select aria-label="Sort menu items" value={menuSort} onChange={e => setMenuSort(e.target.value)}>
+                {MENU_SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+              </select>
+            </label>
           </div>
           <div className="cat-strip" aria-label="Filter menu by category">
             {menuCategories.map(c => (
@@ -999,8 +1025,8 @@ function App() {
           </div>
         ) : (
           <div className="menu-admin__empty">
-            <p>No dishes match this search.</p>
-            <button type="button" className="hero-btn hero-btn--outline" onClick={() => { setMenuSearch(''); setMenuCategory('All'); }}>Clear filters</button>
+            <p>No dishes match these filters.</p>
+            <button type="button" className="hero-btn hero-btn--outline" onClick={() => { setMenuSearch(''); setMenuCategory('All'); setMenuAvailability('all'); setMenuSort('default'); }}>Clear filters</button>
           </div>
         )}
       </section>

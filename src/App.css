@@ -589,6 +589,13 @@ button.tag { border: none; transition: var(--transition-color); }
 }
 .pos-menu { display: flex; flex-direction: column; gap: var(--space-6); }
 .pos-filters { display: flex; flex-direction: column; gap: var(--space-4); }
+.menu-filter-row { display: flex; align-items: end; flex-wrap: wrap; gap: var(--space-3); width: 100%; }
+.menu-filter-row .pos-search-wrap { flex: 1 1 280px; min-width: min(100%, 220px); }
+.menu-filter-row .pos-search { min-height: 44px; font-size: max(1rem, var(--text-base)); }
+.menu-filter-select { display: flex; flex-direction: column; gap: var(--space-1); color: var(--ink-secondary); font-size: var(--text-xs); font-weight: var(--weight-medium); }
+.menu-filter-select select { min-height: 44px; min-width: 180px; max-width: 100%; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-default); border-radius: var(--radius-button); background: var(--surface-raised); color: var(--ink-primary); font: inherit; font-size: max(1rem, var(--text-base)); }
+.menu-filter-select select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 600px) { .menu-filter-select { flex: 1 1 180px; } .menu-filter-select select { width: 100%; } }
 
 .table-session-banner {
   display: flex;
@@ -1107,7 +1114,7 @@ button.tag { border: none; transition: var(--transition-color); }
   flex-wrap: wrap;
   margin: var(--space-8) 0 var(--space-4);
 }
-.menu-toolbar .pos-search-wrap { flex: 1; min-width: 200px; }
+.menu-toolbar .cat-strip { flex-basis: 100%; }
 
 .menu-admin {
   padding: var(--space-8);
